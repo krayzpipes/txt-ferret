@@ -4,10 +4,24 @@ from pathlib import Path
 import re
 
 from loguru import logger
-import yaml
 
 from ._config import load_config, validate_config
-from ._sanity import sanity_mapping
+from ._sanity import sanity_check
+
+
+def tokenize(clear_text, mask, index, tokenize=True):
+    if not tokenize:
+        return clear_text
+    return _get_tokenized_string()
+
+
+def _get_tokenized_string(text, mask, index):
+    end_index = index + len(mask)
+    text_length =len(text)
+    if (text_length - 1) < end_index:
+        temp_string = f"{text[:index]}{mask}"
+        return temp_string[:text_length]
+    return f"{text[:index]}{mask}{text[end_index:]}"
 
 
 class Filter:
@@ -16,7 +30,7 @@ class Filter:
 
         try:
             self.pattern = filter_dict["pattern"]
-        except KeyError
+        except KeyError:
             raise ValueError("Pattern missing from filter.")
 
         self.type = filter_dict.get("type", "NOT_DEFINED")
@@ -25,7 +39,7 @@ class Filter:
         try:
             self.token_mask = filter_dict["tokenize"].get("mask", "XXXXXXXXXXXXXXX")
         except KeyError:
-            self.token_mask = "XXXXXXXXXXXXXXX"
+            self.token_mask = "XXXXXXXXXXXXXXX" # move this to the default
             self.token_index = 0
         else:
             self.token_index = filter_dict["tokenize"].get("index", 0)
@@ -54,48 +68,54 @@ class TxtFerret:
         return mb
 
     def scan_file(self, file_name=None):
-        failed_luhn = 0
-        passed_luhn = 0
+        failed_sanity = 0
+        passed_sanity = 0
         file_to_scan = file_name or self.file_name
         with open(file_to_scan, "r") as rf:
             for index, line in enumerate(rf):
                 failed, passed = self.scan_line(index, line)
-                failed_luhn += failed
-                passed_luhn += passed
-        logger.info(f"Regex matched  but luhn failed summary: {failed_luhn}")
-        logger.info(f"Regex matched and luhn passed summary: {passed_luhn}")
+                failed_sanity += failed
+                passed_sanity += passed
+        logger.info(f"Regex matched but failed sanity check: {failed_sanity}")
+        logger.info(f"Regex matched and passed sanity check: {passed_sanity}")
 
 
     def scan_line(self, index, line):
-        _failed_luhn = 0
-        _passed_luhn = 0
-        for key, regex in self._ccn_regex_compiled.items():
-            match = regex.search(line)
+        _failed_sanity = 0
+        _passed_sanity = 0
+
+        for filter_ in self.filters:
+            match = filter_.regex.search(line)
 
             if not match:
                 continue
 
             filtered = re.sub("[\W_]", "", match.group(1))
-            luhn_result = luhn(filtered)
 
-            if not luhn_result:
-                _failed_luhn += 1
-                if not self.config.SUMMARIZE:
+            if isinstance(filter_.sanity, str):
+                filter_.sanity = [filter_.sanity]
+
+            failed_sanity_flag = False
+            for algorithm_name in filter_.sanity:
+                if not sanity_check(algorithm_name, filtered):
+                    failed_sanity_flag = True
+
+
+            if failed_sanity_flag:
+                _failed_sanity += 1
+                if not self.config["summarize"]:
                     logger.debug(
-                        f"{key} regex matched but luhn tested negative: line {index}."
+                        f"{filter_.label} regex matched but sanity check "
+                        f"failed: line {index}."
                     )
                 continue
-            result_string = self.tokenize(filtered)
-            _passed_luhn += 1
-            if not self.config.SUMMARIZE:
-                logger.info(
-                    f"Regex for {key} matched an passed Luhn test on line "
-                    f"{index+1}: {result_string}"
-                )
-        return _failed_luhn, _passed_luhn
 
-    def tokenize(self, clear_text):
-        if not self._tokenize_flag:
-            return clear_text
-        tokenized_text = f"{clear_text[0:4]}{self._tokenize_string}{clear_text[12:]}"
-        return tokenized_text
+            final_string = tokenize(filter)
+            _passed_sanity += 1
+            if not self.config["summarize"]:
+                logger.info(
+                    f"{filter_.label} matched on line {index+1} and "
+                    f"passed sanity check: {final_string}"
+                )
+        return _failed_sanity, _passed_sanity
+

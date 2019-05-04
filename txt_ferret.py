@@ -52,21 +52,21 @@ class TxtFerret:
         return mb
 
     def scan_file(self, file_name=None):
-        failed_luhn = 0
-        passed_luhn = 0
+        failed_sanity = 0
+        passed_sanity = 0
         file_to_scan = file_name or self.file_name
         with open(file_to_scan, "r") as rf:
             for index, line in enumerate(rf):
                 failed, passed = self.scan_line(index, line)
-                failed_luhn += failed
-                passed_luhn += passed
-        logger.info(f"Regex matched  but luhn failed summary: {failed_luhn}")
-        logger.info(f"Regex matched and luhn passed summary: {passed_luhn}")
+                failed_sanity += failed
+                passed_sanity += passed
+        logger.info(f"Regex matched  but luhn failed summary: {failed_sanity}")
+        logger.info(f"Regex matched and luhn passed summary: {passed_sanity}")
 
 
     def scan_line(self, index, line):
-        _failed_luhn = 0
-        _passed_luhn = 0
+        _failed_sanity = 0
+        _passed_sanity = 0
         for key, regex in self._ccn_regex_compiled.items():
             match = regex.search(line)
 
@@ -77,20 +77,20 @@ class TxtFerret:
             luhn_result = luhn(filtered)
 
             if not luhn_result:
-                _failed_luhn += 1
+                _failed_sanity += 1
                 if not self.config.SUMMARIZE:
                     logger.debug(
                         f"{key} regex matched but luhn tested negative: line {index}."
                     )
                 continue
             result_string = self.tokenize(filtered)
-            _passed_luhn += 1
+            _passed_sanity += 1
             if not self.config.SUMMARIZE:
                 logger.info(
                     f"Regex for {key} matched an passed Luhn test on line "
                     f"{index+1}: {result_string}"
                 )
-        return _failed_luhn, _passed_luhn
+        return _failed_sanity, _passed_sanity
 
     def tokenize(self, clear_text):
         if not self._tokenize_flag:

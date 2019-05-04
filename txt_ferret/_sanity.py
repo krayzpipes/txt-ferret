@@ -19,3 +19,12 @@ def luhn(account_string):
 sanity_mapping = {
     "luhn": luhn,
 }
+
+
+def sanity_check(sanity_check_name, data, sanity_map=None):
+    try:
+        _sanity_algorithm = sanity_mapping[sanity_check_name]
+    except KeyError:
+        raise ValueError(f"Sanity algorithm {sanity_check_name} does not exist.")
+    else:
+        return _sanity_algorithm(data)
