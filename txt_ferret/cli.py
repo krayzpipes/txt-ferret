@@ -3,6 +3,10 @@ import click
 from ._config import load_config, save_config
 from .core import TxtFerret
 
+
+def _get_settings_dict(*args):
+    pass
+
 @click.group()
 def cli():
     pass
@@ -22,13 +26,24 @@ def cli():
     help="Summarize output",
 )
 @click.option(
-    "--output", "-o",
+    "--output-file", "-o", default=None,
     help="Write output to file specified by this switch.",
 )
+@click.option(
+    "--config-file", "-c", default=None,
+    help="Load user-defined config file."
+)
+@click.option(
+    "--config-override", "-co", is_flag=True,
+    help="Delete default filters and only use user-defined filters from config file.",
+)
 @click.argument("file_name")
-def scan(file_name, no_tokenize, log_level, summarize):
+def scan(**cli_kwargs):
     # Code to run scan
-    ferret = TxtFerret(file_name)
+
+    ferret = TxtFerret(**cli_kwargs)
+    ferret.scan_file()
+
 
 @click.command()
 @click.argument("file_name")

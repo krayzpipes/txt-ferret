@@ -1,4 +1,10 @@
 
+settings:
+  tokenize: Yes
+  log_level: INFO
+  summarize: No
+  output_file:
+
 filters:
   - label: american_express_15_ccn
     type: Credit Card Number
@@ -35,7 +41,3 @@ filters:
     tokenize:
       mask: XXXXXXXX
       index: 2
-settings:
-  tokenize: Yes
-  log_level: INFO
-  summarize: No

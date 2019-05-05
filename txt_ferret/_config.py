@@ -19,6 +19,7 @@ _allowed_settings_keys = {
     "tokenize",
     "log_level",
     "summarize",
+    "output_file",
 }
 
 def _load_config(yaml_file=None):
@@ -33,34 +34,37 @@ def _load_default_config(yaml_file="_default.yaml"):
         return yaml.safe_load(f)
 
 
-def load_config(yaml_file=None, include_default=True):
+def load_config(yaml_file=None, default_override=False):
 
     # Load the default config as the final config, we will make
     # asjustements as we look at the user-defined config.
-    final_config = _load_default_config()
+    working_config = _load_default_config()
+
+    # Return default config if no file is defined by user or settings
+    # introduced through CLI switches.
     if yaml_file is None:
-        return final_config
+        return working_config
 
+    # Mix in the user config if present and return it.
+    return _add_user_config_file(working_config, yaml_file, default_override)
+
+
+def _add_user_config_file(config_, yaml_file, default_override):
     user_defined_config = _load_config(yaml_file)
-
     validate_config(user_defined_config)
 
-    # If the user config has filters, add them to the final config.
-    # If the user chose to exclude default filters, then don't use
-    # them.
     if "filters" in user_defined_config:
         if not include_default:
-            final_config["filters"] = user_defined_config["filters"]
+            config_["filters"] = user_defined_config["filters"]
         else:
             for filter_ in user_defined_config["filters"]:
-                final_config["filters"].append(filter_)
+                config_["filters"].append(filter_)
 
     if "settings" in user_defined_config:
         for key, value in user_defined_config["settings"].items():
-            final_config["settings"][key] = value
+            config_["settings"][key] = value
 
-    return final_config
-
+    return config_
 
 def save_config(data, file_name):
     with open(file_name, "w+") as wf:

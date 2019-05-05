@@ -4,11 +4,21 @@ Identify and classify data in your text files with Python.
 # Quick Start
 
 ```bash
-$ pip install txt-ferret
+$ git clone git@github.com:krayzpipes/txt-ferret.git
+$ cd txt-ferret
 ```
 
 ```bash
-$ txt_ferret TXT_FILE -o stdout
+$ python3.7 -m venv venv
+$ source venv/bin/activate
+```
+
+```bash
+(venv) $ pip install -r requirements.txt
+```
+
+```bash
+(venv) $ python txtferret.py scan my_file.txt
 ```
 
 # About
