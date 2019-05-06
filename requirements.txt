@@ -1,0 +1,12 @@
+ansimarkup==1.4.0
+appdirs==1.4.3
+attrs==19.1.0
+better-exceptions-fork==0.2.1.post6
+black==19.3b0
+Click==7.0
+colorama==0.4.1
+loguru==0.2.5
+pkg-resources==0.0.0
+Pygments==2.3.1
+PyYAML==5.1
+toml==0.10.0
