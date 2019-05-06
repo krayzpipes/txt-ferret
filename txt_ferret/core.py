@@ -97,7 +97,7 @@ class TxtFerret:
         logger.info(f"Regex matched and passed sanity check: {passed_sanity}")
 
         seconds = delta.seconds
-        minutes = delta.seconds / 60
+        minutes = delta.seconds // 60
 
         logger.info(f"Finished in {seconds} seconds ({minutes} minutes).")
 
