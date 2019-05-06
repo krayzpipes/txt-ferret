@@ -20,6 +20,7 @@ _allowed_settings_keys = {
     "log_level",
     "summarize",
     "output_file",
+    "show_matches",
 }
 
 def _load_config(yaml_file=None):

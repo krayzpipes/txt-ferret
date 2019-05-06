@@ -8,7 +8,9 @@ from ._config import load_config, _allowed_settings_keys
 from ._sanity import sanity_check
 
 
-def tokenize(clear_text, mask, index, tokenize=True):
+def tokenize(clear_text, mask, index, tokenize=True, show_matches=False):
+    if not show_matches:
+        return "REDACTED"
     if not tokenize:
         return clear_text
     return _get_tokenized_string(clear_text, mask, index)
@@ -107,6 +109,7 @@ class TxtFerret:
         _passed_sanity = 0
 
         for filter_ in self.filters:
+            summarize_setting = self.config["settings"]["summarize"]
             match = filter_.regex.search(line)
 
             if not match:
@@ -117,27 +120,48 @@ class TxtFerret:
             if isinstance(filter_.sanity, str):
                 filter_.sanity = [filter_.sanity]
 
-            failed_sanity_flag = False
-            for algorithm_name in filter_.sanity:
-                if not sanity_check(algorithm_name, filtered):
-                    failed_sanity_flag = True
-
-
-            if failed_sanity_flag:
+            if not self.test_sanity(filter_, filtered):
                 _failed_sanity += 1
-                if not self.config["settings"]["summarize"]:
-                    logger.debug(
-                        f"{filter_.label} regex matched but sanity check "
-                        f"failed: line {index + 1}."
-                    )
+                if not summarize_setting:
+                    self.log_failure(filter_, index)
                 continue
 
-            final_string = tokenize(filtered, filter_.token_mask, filter_.token_index)
+            redact_setting = self.config["settings"]["show_matches"]
+
+            tokenize_setting = self.config["settings"]["tokenize"]
+
+            final_string = tokenize(
+                filtered, filter_.token_mask,
+                filter_.token_index, tokenize=tokenize_setting,
+                show_matches=redact_setting,
+            )
+
             _passed_sanity += 1
-            if not self.config["settings"]["summarize"]:
-                logger.info(
-                    f"{filter_.label} matched on line {index + 1} and "
-                    f"passed sanity check: {final_string}"
-                )
+            if not summarize_setting:
+                self.log_success(filter_, index, final_string)
+
         return _failed_sanity, _passed_sanity
 
+    def test_sanity(self, filter_, text):
+        if isinstance(filter_.sanity, str):
+            filter_.sanity = [filter_.sanity]
+
+        for algorithm_name in filter_.sanity:
+            if not sanity_check(algorithm_name, text):
+                return False
+        return True
+
+    def log_success(self, filter_, index, string_):
+        matched_string = string_
+        message = (
+            f"Matched and passed sanity - Filter: {filter_.label}, "
+            f"Line {index + 1}, String: {matched_string}"
+        )
+        logger.info(message)
+
+    def log_failure(self, filter_, index, config=None):
+        message = (
+            f"Matched and FAILED sanity - Filter: {filter_.label}, "
+            f"Line: {index + 1}"
+        )
+        logger.debug(message)

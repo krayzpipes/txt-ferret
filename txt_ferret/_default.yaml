@@ -4,6 +4,7 @@ settings:
   log_level: INFO
   summarize: No
   output_file:
+  show_matches: No
 
 filters:
   - label: american_express_15_ccn
