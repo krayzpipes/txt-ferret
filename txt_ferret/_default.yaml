@@ -4,13 +4,13 @@ settings:
   log_level: INFO
   summarize: No
   output_file:
-  show_matches: No
+  show_matches: Yes
 
 filters:
   - label: american_express_15_ccn
     type: Credit Card Number
     sanity: luhn
-    pattern: '((34|37)\d{2}[\W_]?\d{6}[\W_]?\d{5})'
+    pattern: '((?:34|37)\d{2}[\W_]?\d{6}[\W_]?\d{5})'
     tokenize:
       mask: XXXXXXXXXXXXX
       index: 2,
@@ -38,7 +38,7 @@ filters:
   - label: diners_carte_14_ccn
     type: Credit Card Number
     sanity: luhn
-    pattern: '((30[0-5]\d|3[68]\d{2})[\W_]?\d{6}[\W_]?\d{4})'
+    pattern: '((?:30[0-5]\d|3[68]\d{2})[\W_]?\d{6}[\W_]?\d{4})'
     tokenize:
       mask: XXXXXXXXXXXX
       index: 2

@@ -107,38 +107,38 @@ class TxtFerret:
     def scan_line(self, index, line):
         _failed_sanity = 0
         _passed_sanity = 0
+        redact_setting = self.config["settings"]["show_matches"]
+        tokenize_setting = self.config["settings"]["tokenize"]
 
         for filter_ in self.filters:
             summarize_setting = self.config["settings"]["summarize"]
-            match = filter_.regex.search(line)
+            matches = filter_.regex.findall(line)
 
-            if not match:
+            if not matches:
                 continue
 
-            filtered = re.sub("[\W_]", "", match.group(1))
+            filtered_list = [re.sub("[\W_]", "", match) for match in matches]
 
             if isinstance(filter_.sanity, str):
                 filter_.sanity = [filter_.sanity]
 
-            if not self.test_sanity(filter_, filtered):
-                _failed_sanity += 1
+            for filtered_string in filtered_list:
+                if not self.test_sanity(filter_, filtered_string):
+                    _failed_sanity += 1
+                    if not summarize_setting:
+                        self.log_failure(filter_, index)
+                    continue
+
+
+                final_string = tokenize(
+                    filtered_string, filter_.token_mask,
+                    filter_.token_index, tokenize=tokenize_setting,
+                    show_matches=redact_setting,
+                )
+
+                _passed_sanity += 1
                 if not summarize_setting:
-                    self.log_failure(filter_, index)
-                continue
-
-            redact_setting = self.config["settings"]["show_matches"]
-
-            tokenize_setting = self.config["settings"]["tokenize"]
-
-            final_string = tokenize(
-                filtered, filter_.token_mask,
-                filter_.token_index, tokenize=tokenize_setting,
-                show_matches=redact_setting,
-            )
-
-            _passed_sanity += 1
-            if not summarize_setting:
-                self.log_success(filter_, index, final_string)
+                    self.log_success(filter_, index, final_string)
 
         return _failed_sanity, _passed_sanity
 
