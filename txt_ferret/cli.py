@@ -37,10 +37,13 @@ def cli():
     "--config-override", "-co", is_flag=True,
     help="Delete default filters and only use user-defined filters from config file.",
 )
+@click.option(
+    "--delimeter", "-d", default="",
+    help="Delimeter to use for field parsing instead of line parsing.",
+)
 @click.argument("file_name")
 def scan(**cli_kwargs):
     # Code to run scan
-
     ferret = TxtFerret(**cli_kwargs)
     ferret.scan_file()
 
