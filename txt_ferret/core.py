@@ -24,6 +24,12 @@ def _get_tokenized_string(text, mask, index):
         return temp_string[:text_length]
     return f"{text[:index]}{mask}{text[end_index:]}"
 
+def _byte_code_to_string(byte_code):
+    match = re.match("b(\d{1,3})", byte_code)
+    if not match:
+        return byte_code
+    code_ = int(match.group(1))
+    return bytes((code_,)).decode('utf-8')
 
 class Filter:
     def __init__(self, filter_dict):
@@ -116,36 +122,73 @@ class TxtFerret:
         _passed_sanity = 0
         redact_setting = self.config["settings"]["show_matches"]
         tokenize_setting = self.config["settings"]["tokenize"]
+        summarize_setting = self.config["settings"]["summarize"]
+        delimeter_setting = self.config["settings"]["delimeter"]
 
         for filter_ in self.filters:
-            summarize_setting = self.config["settings"]["summarize"]
-            matches = filter_.regex.findall(line)
+            column_strings = {}
+            if delimeter_setting:
+                delim = _byte_code_to_string(delimeter_setting)
+                string_sections = line.split(delim)
+                for i, section in enumerate(string_sections):
+                    matches = filter_.regex.findall(section)
+                    if not matches:
+                        continue
+                    for match in matches:
+                        if str(i) not in column_strings:
+                            column_strings[str(i)] = []
+                        normalized = re.sub("[\W_]", "", match)
+                        column_strings[str(i)].append(normalized)
 
-            if not matches:
-                continue
+                if isinstance(filter_.sanity, str):
+                    filter_.sanity = [filter_.sanity]
 
-            filtered_list = [re.sub("[\W_]", "", match) for match in matches]
+                for key, value in column_strings.items():
+                    for item in value:
+                        if not self.test_sanity(filter_, item):
+                            _failed_sanity += 1
+                            if not summarize_setting:
+                                self.log_failure(filter_, index, column=int(key))
 
-            if isinstance(filter_.sanity, str):
-                filter_.sanity = [filter_.sanity]
+                        final_string = tokenize(
+                            item, filter_.token_mask,
+                            filter_.token_index, tokenize=tokenize_setting,
+                            show_matches=redact_setting,
+                        )
 
-            for filtered_string in filtered_list:
-                if not self.test_sanity(filter_, filtered_string):
-                    _failed_sanity += 1
-                    if not summarize_setting:
-                        self.log_failure(filter_, index)
+                        _passed_sanity += 1
+                        if not summarize_setting:
+                            self.log_success(filter_, index, final_string, column=int(key))
+            else:
+
+                matches = filter_.regex.findall(line)
+
+
+                if not matches:
                     continue
 
+                filtered_list = [re.sub("[\W_]", "", match) for match in matches]
 
-                final_string = tokenize(
-                    filtered_string, filter_.token_mask,
-                    filter_.token_index, tokenize=tokenize_setting,
-                    show_matches=redact_setting,
-                )
+                if isinstance(filter_.sanity, str):
+                    filter_.sanity = [filter_.sanity]
 
-                _passed_sanity += 1
-                if not summarize_setting:
-                    self.log_success(filter_, index, final_string)
+                for filtered_string in filtered_list:
+                    if not self.test_sanity(filter_, filtered_string):
+                        _failed_sanity += 1
+                        if not summarize_setting:
+                            self.log_failure(filter_, index)
+                        continue
+
+
+                    final_string = tokenize(
+                        filtered_string, filter_.token_mask,
+                        filter_.token_index, tokenize=tokenize_setting,
+                        show_matches=redact_setting,
+                    )
+
+                    _passed_sanity += 1
+                    if not summarize_setting:
+                        self.log_success(filter_, index, final_string)
 
         return _failed_sanity, _passed_sanity
 
@@ -158,17 +201,29 @@ class TxtFerret:
                 return False
         return True
 
-    def log_success(self, filter_, index, string_):
+    def log_success(self, filter_, index, string_, column=None):
         matched_string = string_
-        message = (
-            f"Matched and passed sanity - Filter: {filter_.label}, "
-            f"Line {index + 1}, String: {matched_string}"
-        )
+        if column:
+            message = (
+                f"Matched and passed sanity - Filter: {filter_.label}, "
+                f"Line {index + 1}, String: {matched_string}, Column: {column}"
+            )
+        else:
+            message = (
+                f"Matched and passed sanity - Filter: {filter_.label}, "
+                f"Line {index + 1}, String: {matched_string}"
+            )
         logger.info(message)
 
-    def log_failure(self, filter_, index, config=None):
-        message = (
-            f"Matched and FAILED sanity - Filter: {filter_.label}, "
-            f"Line: {index + 1}"
-        )
+    def log_failure(self, filter_, index, column=None, config=None):
+        if column:
+            message = (
+                f"Matched and FAILED sanity - Filter: {filter_.label}, "
+                f"Line: {index + 1}, Column: {column + 1}"
+            )
+        else:
+            message = (
+                f"Matched and FAILED sanity - Filter: {filter_.label}, "
+                f"Line: {index + 1}"
+            )
         logger.debug(message)
