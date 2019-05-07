@@ -42,8 +42,15 @@ class Filter:
         except KeyError:
             self.token_mask = "XXXXXXXXXXXXXXX" # move this to the default
             self.token_index = 0
-        else:
-            self.token_index = filter_dict["tokenize"].get("index", 0)
+            logger.info(
+                f"Filter {self.label} did not have tokenize section. Reverting to "
+                f"default tokenization mask and index."
+            )
+
+        try:
+            self.token_index = int(filter_dict["tokenize"].get("index", 0))
+        except ValueError:
+            raise ValueError(f"Token index for {self.label} filter is not an integer.")
 
         self.regex = re.compile(self.pattern)
 
