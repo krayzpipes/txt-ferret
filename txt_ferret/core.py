@@ -1,6 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 import re
+import json
 
 from loguru import logger
 
@@ -33,6 +34,7 @@ def _byte_code_to_string(byte_code):
 
 class Filter:
     def __init__(self, filter_dict):
+
         self.label = filter_dict.get("label", "NOT_DEFINED")
 
         try:
@@ -42,6 +44,9 @@ class Filter:
 
         self.type = filter_dict.get("type", "NOT_DEFINED")
         self.sanity = filter_dict.get("sanity", "")
+
+        if isinstance(self.sanity, str):
+            self.sanity = [self.sanity]
 
         try:
             self.token_mask = filter_dict["tokenize"].get("mask", "XXXXXXXXXXXXXXX")
@@ -62,168 +67,189 @@ class Filter:
 
 
 class TxtFerret:
-    def __init__(self, file_name=None, config_file=None, config_=None, **kwargs):
+    def __init__(self, file_name=None, config_file=None, config_=None, **cli_settings):
+        config = config_ or load_config(yaml_file=config_file)
         self.file_name = file_name
-        self.config = config_ or load_config(yaml_file=config_file)
 
-        # Note that settings from the CLI will overwrite settings from
-        # user defined config and default config.
+        # Set settings from file.
+        self.set_attributes(**config["settings"])
 
+        # Override settings from file with CLI arguments if present.
+        self.set_attributes(**cli_settings)
+
+        self.failed_sanity = 0
+        self.passed_sanity = 0
+
+
+        self.filters = [
+            Filter(filter_dict=filter_) for filter_ in config["filters"]
+        ]
+
+    def set_attributes(self, config_flag=False, **kwargs):
         for setting, value in kwargs.items():
 
-            if not value:
-                continue
-
             if setting == "no_tokenize":
-                self.config["settings"]["tokenize"] = False
-                continue
+                if not value:
+                    continue
+                self.tokenize = False
 
             if setting not in _allowed_settings_keys:
                 continue
 
-            self.config["settings"][setting] = value
+            # If the current setting has no value, check to see if
+            # the object already has an attribute of the same name.
+            # If it does not, then we assume this is the original
+            # config being loaded, so assign the value.
 
-        self.filters = [
-            Filter(filter_dict=filter_) for filter_ in self.config["filters"]
-        ]
+            # If it the setting has no value and the attribute DOES
+            # already exist, then this is a CLI argument and we don't
+            # want to overwrite the config... so continue to the next
+            # loop iteration.
+
+            if not value:
+                try:
+                    _ = getattr(self, setting)
+                except AttributeError:
+                    setattr(self, setting, value)
+                else:
+                    continue
+
+            setattr(self, setting, value)
 
     def _get_file_size(self):
         file_ = Path(self.file_name)
         mb = file_.stat().st_size / 1024 / 1024
         return mb
 
+
     def scan_file(self, file_name=None):
         start = datetime.now()
-        failed_sanity = 0
-        passed_sanity = 0
 
         file_to_scan = file_name or self.file_name
 
         with open(file_to_scan, "r") as rf:
             for index, line in enumerate(rf):
-                failed, passed = self.scan_line(index, line)
-                failed_sanity += failed
-                passed_sanity += passed
+                if self.delimiter:
+                    self._scan_delimited_line(line, index)
+                    continue
+                self._scan_non_delimited_line(line, index)
 
         end = datetime.now()
         delta = end - start
 
-        logger.info(f"Regex matched but failed sanity check: {failed_sanity}")
-        logger.info(f"Regex matched and passed sanity check: {passed_sanity}")
+        logger.info("SUMMARY:")
+        logger.info(f"  - Matched regex, failed sanity: {self.failed_sanity}")
+        logger.info(f"  - Matched regex, passed sanity: {self.passed_sanity}")
 
         seconds = delta.seconds
         minutes = delta.seconds // 60
 
-        logger.info(f"Finished in {seconds} seconds ({minutes} minutes).")
+        logger.info(f"Finished in {seconds} seconds (~{minutes} minutes).")
 
 
-    def scan_line(self, index, line):
-        _failed_sanity = 0
-        _passed_sanity = 0
-        redact_setting = self.config["settings"]["show_matches"]
-        tokenize_setting = self.config["settings"]["tokenize"]
-        summarize_setting = self.config["settings"]["summarize"]
-        delimeter_setting = self.config["settings"]["delimeter"]
-
+    def _scan_delimited_line(self, line, index):
         for filter_ in self.filters:
-            column_strings = {}
-            if delimeter_setting:
-                delim = _byte_code_to_string(delimeter_setting)
-                string_sections = line.split(delim)
-                for i, section in enumerate(string_sections):
-                    matches = filter_.regex.findall(section)
-                    if not matches:
-                        continue
-                    for match in matches:
-                        if str(i) not in column_strings:
-                            column_strings[str(i)] = []
-                        normalized = re.sub("[\W_]", "", match)
-                        column_strings[str(i)].append(normalized)
+            column_map = {}
+            delimiter = _byte_code_to_string(self.delimiter)
 
-                if isinstance(filter_.sanity, str):
-                    filter_.sanity = [filter_.sanity]
+            columns = line.split(delimiter)
 
-                for key, value in column_strings.items():
-                    for item in value:
-                        if not self.test_sanity(filter_, item):
-                            _failed_sanity += 1
-                            if not summarize_setting:
-                                self.log_failure(filter_, index, column=int(key))
-
-                        final_string = tokenize(
-                            item, filter_.token_mask,
-                            filter_.token_index, tokenize=tokenize_setting,
-                            show_matches=redact_setting,
-                        )
-
-                        _passed_sanity += 1
-                        if not summarize_setting:
-                            self.log_success(filter_, index, final_string, column=int(key))
-            else:
-
-                matches = filter_.regex.findall(line)
-
+            # Look for matches in each column.
+            for i, column in enumerate(columns):
+                matches = filter_.regex.findall(column)
 
                 if not matches:
                     continue
 
-                filtered_list = [re.sub("[\W_]", "", match) for match in matches]
+                for match in matches:
+                    if str(i) not in column_map:
+                        column_map[str(i)] = []
 
-                if isinstance(filter_.sanity, str):
-                    filter_.sanity = [filter_.sanity]
+                    column_map[str(i)].append(match)
 
-                for filtered_string in filtered_list:
-                    if not self.test_sanity(filter_, filtered_string):
-                        _failed_sanity += 1
-                        if not summarize_setting:
-                            self.log_failure(filter_, index)
+            for column_number, column_match_list in column_map.items():
+                for column_match in column_match_list:
+
+                    if not test_sanity(filter_, column_match):
+                        self.failed_sanity += 1
+
+                        if not self.summarize:
+                            log_failure(filter_, index)
+
                         continue
 
+                    self.passed_sanity += 1
 
-                    final_string = tokenize(
-                        filtered_string, filter_.token_mask,
-                        filter_.token_index, tokenize=tokenize_setting,
-                        show_matches=redact_setting,
+                    string_to_log = tokenize(
+                        column_match, filter_.token_mask,
+                        filter_.token_index, tokenize=self.tokenize,
+                        show_matches=self.show_matches,
                     )
 
-                    _passed_sanity += 1
-                    if not summarize_setting:
-                        self.log_success(filter_, index, final_string)
+                    if not self.summarize:
+                        log_success(
+                            filter_, index, string_to_log, column=int(column_number)
+                        )
 
-        return _failed_sanity, _passed_sanity
 
-    def test_sanity(self, filter_, text):
-        if isinstance(filter_.sanity, str):
-            filter_.sanity = [filter_.sanity]
+    def _scan_non_delimited_line(self, line=None, index=None):
+        for filter_ in self.filters:
+            matches = filter_.regex.findall(line)
 
-        for algorithm_name in filter_.sanity:
-            if not sanity_check(algorithm_name, text):
-                return False
-        return True
+            if not matches:
+                continue
 
-    def log_success(self, filter_, index, string_, column=None):
-        matched_string = string_
-        if column:
-            message = (
-                f"Matched and passed sanity - Filter: {filter_.label}, "
-                f"Line {index + 1}, String: {matched_string}, Column: {column}"
-            )
-        else:
-            message = (
-                f"Matched and passed sanity - Filter: {filter_.label}, "
-                f"Line {index + 1}, String: {matched_string}"
-            )
-        logger.info(message)
+            for match in matches:
+                if not test_sanity(filter_, match):
+                    self.failed_sanity += 1
+                    if not self.summarize:
+                        log_failure(filter_, index)
+                    continue
 
-    def log_failure(self, filter_, index, column=None, config=None):
-        if column:
-            message = (
-                f"Matched and FAILED sanity - Filter: {filter_.label}, "
-                f"Line: {index + 1}, Column: {column + 1}"
-            )
-        else:
-            message = (
-                f"Matched and FAILED sanity - Filter: {filter_.label}, "
-                f"Line: {index + 1}"
-            )
-        logger.debug(message)
+                self.passed_sanity += 1
+
+                string_to_log = tokenize(
+                    match, filter_.token_mask,
+                    filter_.token_index, tokenize=self.tokenize,
+                    show_matches=self.show_matches,
+                )
+
+                if not self.summarize:
+                    log_success(filter_, index, string_to_log)
+
+
+def test_sanity(filter_, text):
+
+    for algorithm_name in filter_.sanity:
+        if not sanity_check(algorithm_name, text):
+            return False
+    return True
+
+
+def log_success(filter_, index, string_, column=None):
+    matched_string = string_
+    if column:
+        message = (
+            f"Matched and passed sanity - Filter: {filter_.label}, "
+            f"Line {index + 1}, String: {matched_string}, Column: {column}"
+        )
+    else:
+        message = (
+            f"Matched and passed sanity - Filter: {filter_.label}, "
+            f"Line {index + 1}, String: {matched_string}"
+        )
+    logger.info(message)
+
+
+def log_failure(filter_, index, column=None, config=None):
+    if column:
+        message = (
+            f"Matched and FAILED sanity - Filter: {filter_.label}, "
+            f"Line: {index + 1}, Column: {column + 1}"
+        )
+    else:
+        message = (
+            f"Matched and FAILED sanity - Filter: {filter_.label}, "
+            f"Line: {index + 1}"
+        )
+    logger.debug(message)

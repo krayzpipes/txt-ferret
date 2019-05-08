@@ -1,3 +1,5 @@
+import json
+
 import click
 
 from ._config import load_config, save_config
@@ -38,8 +40,8 @@ def cli():
     help="Delete default filters and only use user-defined filters from config file.",
 )
 @click.option(
-    "--delimeter", "-d", default="",
-    help="Delimeter to use for field parsing instead of line parsing.",
+    "--delimiter", "-d", default="",
+    help="Delimiter to use for field parsing instead of line parsing.",
 )
 @click.argument("file_name")
 def scan(**cli_kwargs):
