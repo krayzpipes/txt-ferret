@@ -1,6 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 import re
+import json
 
 from loguru import logger
 
@@ -33,6 +34,7 @@ def _byte_code_to_string(byte_code):
 
 class Filter:
     def __init__(self, filter_dict):
+
         self.label = filter_dict.get("label", "NOT_DEFINED")
 
         try:
@@ -78,22 +80,39 @@ class TxtFerret:
         self.failed_sanity = 0
         self.passed_sanity = 0
 
+
         self.filters = [
             Filter(filter_dict=filter_) for filter_ in config["filters"]
         ]
 
-    def set_attributes(self, **kwargs):
+    def set_attributes(self, config_flag=False, **kwargs):
         for setting, value in kwargs.items():
+
+            if setting == "no_tokenize":
+                if not value:
+                    continue
+                self.tokenize = False
 
             if setting not in _allowed_settings_keys:
                 continue
 
-            if not value:
-                continue
+            # If the current setting has no value, check to see if
+            # the object already has an attribute of the same name.
+            # If it does not, then we assume this is the original
+            # config being loaded, so assign the value.
 
-            if setting == "no_tokenize":
-                self.tokenize = False
-                continue
+            # If it the setting has no value and the attribute DOES
+            # already exist, then this is a CLI argument and we don't
+            # want to overwrite the config... so continue to the next
+            # loop iteration.
+
+            if not value:
+                try:
+                    _ = getattr(self, setting)
+                except AttributeError:
+                    setattr(self, setting, value)
+                else:
+                    continue
 
             setattr(self, setting, value)
 
@@ -103,11 +122,10 @@ class TxtFerret:
         return mb
 
 
-
     def scan_file(self, file_name=None):
         start = datetime.now()
 
-        file_to_scan = file_name
+        file_to_scan = file_name or self.file_name
 
         with open(file_to_scan, "r") as rf:
             for index, line in enumerate(rf):
@@ -119,13 +137,14 @@ class TxtFerret:
         end = datetime.now()
         delta = end - start
 
-        logger.info(f"Regex matched but failed sanity check: {failed_sanity}")
-        logger.info(f"Regex matched and passed sanity check: {passed_sanity}")
+        logger.info("SUMMARY:")
+        logger.info(f"  - Matched regex, failed sanity: {self.failed_sanity}")
+        logger.info(f"  - Matched regex, passed sanity: {self.passed_sanity}")
 
         seconds = delta.seconds
         minutes = delta.seconds // 60
 
-        logger.info(f"Finished in {seconds} seconds ({minutes} minutes).")
+        logger.info(f"Finished in {seconds} seconds (~{minutes} minutes).")
 
 
     def _scan_delimited_line(self, line, index):
@@ -143,10 +162,10 @@ class TxtFerret:
                     continue
 
                 for match in matches:
-                    if str(i) not in columns:
-                        columns[str(i)] = []
+                    if str(i) not in column_map:
+                        column_map[str(i)] = []
 
-                    columns[str(i)].append(match)
+                    column_map[str(i)].append(match)
 
             for column_number, column_match_list in column_map.items():
                 for column_match in column_match_list:
@@ -178,7 +197,7 @@ class TxtFerret:
             matches = filter_.regex.findall(line)
 
             if not matches:
-                return 0, 0
+                continue
 
             for match in matches:
                 if not test_sanity(filter_, match):
@@ -199,7 +218,7 @@ class TxtFerret:
                     log_success(filter_, index, string_to_log)
 
 
-def test_sanity(self, filter_, text):
+def test_sanity(filter_, text):
 
     for algorithm_name in filter_.sanity:
         if not sanity_check(algorithm_name, text):
@@ -207,7 +226,7 @@ def test_sanity(self, filter_, text):
     return True
 
 
-def log_success(self, filter_, index, string_, column=None):
+def log_success(filter_, index, string_, column=None):
     matched_string = string_
     if column:
         message = (
@@ -222,7 +241,7 @@ def log_success(self, filter_, index, string_, column=None):
     logger.info(message)
 
 
-def log_failure(self, filter_, index, column=None, config=None):
+def log_failure(filter_, index, column=None, config=None):
     if column:
         message = (
             f"Matched and FAILED sanity - Filter: {filter_.label}, "
