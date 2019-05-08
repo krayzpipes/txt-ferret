@@ -5,6 +5,7 @@ settings:
   summarize: No
   output_file:
   show_matches: Yes
+  delimeter:
 
 filters:
   - label: american_express_15_ccn

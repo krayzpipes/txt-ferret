@@ -21,7 +21,7 @@ _allowed_settings_keys = {
     "summarize",
     "output_file",
     "show_matches",
-    "delimeter"
+    "delimiter"
 }
 
 def _load_config(yaml_file=None):

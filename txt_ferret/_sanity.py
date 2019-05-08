@@ -1,4 +1,4 @@
-
+import re
 
 def luhn(account_string):
     """Checks a string of digits to see if it passes the Luhn test.
@@ -6,10 +6,16 @@ def luhn(account_string):
     This is
     """
 
+    no_special_chars = re.sub("[\W_]", "", account_string)
+
     try:
+        # doubled_tuple:
+        # Note that each number is the index doubled, OR it is the
+        # difference of the index doubled and ten. This is required
+        # as part of the luhn calculations.
         doubled_tuple = (0, 2, 4, 6, 8, 1, 3, 5, 7, 9)
-        evens = sum(int(even_num) for even_num in account_string[-1::-2])
-        odds = sum(doubled_tuple[int(odd_num)] for odd_num in account_string[-2::-2])
+        evens = sum(int(even_num) for even_num in no_special_chars[-1::-2])
+        odds = sum(doubled_tuple[int(odd_num)] for odd_num in no_special_chars[-2::-2])
     except ValueError:
         raise ValueError("Luhn algorithm input must convert to int.")
     else:
