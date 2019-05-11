@@ -1,12 +1,22 @@
 from datetime import datetime
 from pathlib import Path
 import re
+import sys
 import json
 
 from loguru import logger
 
 from ._config import load_config, _allowed_settings_keys
 from ._sanity import sanity_check
+
+def get_logger_config(out_file=None, log_level="INFO", ):
+    log_config = {
+        "handlers": [
+            {"sink": sys.stdout, "format": "{time}: {message}"},
+            {"sink": out_file, "serialize": True}
+        ]
+    }
+    return log_config
 
 
 def tokenize(clear_text, mask, index, tokenize=True, show_matches=False):
@@ -230,12 +240,12 @@ def log_success(filter_, index, string_, column=None):
     matched_string = string_
     if column:
         message = (
-            f"Matched and passed sanity - Filter: {filter_.label}, "
+            f"PASSED sanity and matched regex - Filter: {filter_.label}, "
             f"Line {index + 1}, String: {matched_string}, Column: {column}"
         )
     else:
         message = (
-            f"Matched and passed sanity - Filter: {filter_.label}, "
+            f"PASSED sanity and matched regex - Filter: {filter_.label}, "
             f"Line {index + 1}, String: {matched_string}"
         )
     logger.info(message)
@@ -244,12 +254,12 @@ def log_success(filter_, index, string_, column=None):
 def log_failure(filter_, index, column=None, config=None):
     if column:
         message = (
-            f"Matched and FAILED sanity - Filter: {filter_.label}, "
+            f"FAILED sanity and matched regex - Filter: {filter_.label}, "
             f"Line: {index + 1}, Column: {column + 1}"
         )
     else:
         message = (
-            f"Matched and FAILED sanity - Filter: {filter_.label}, "
+            f"FAILED sanity and matched regex - Filter: {filter_.label}, "
             f"Line: {index + 1}"
         )
     logger.debug(message)

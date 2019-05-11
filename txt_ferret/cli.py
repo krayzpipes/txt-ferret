@@ -1,6 +1,8 @@
 import json
+import sys
 
 import click
+from loguru import logger
 
 from ._config import load_config, save_config
 from .core import TxtFerret
@@ -46,6 +48,7 @@ def cli():
 @click.argument("file_name")
 def scan(**cli_kwargs):
     # Code to run scan
+    set_logger(**cli_kwargs)
     ferret = TxtFerret(**cli_kwargs)
     ferret.scan_file()
 
@@ -59,3 +62,29 @@ def dump_config(file_name):
 
 cli.add_command(scan)
 cli.add_command(dump_config)
+
+
+def set_logger(**cli_kwargs):
+    # logger.level(cli_kwargs["log_level"])
+    log_config = {
+        "handlers": [
+            {
+                "sink": sys.stdout,
+                "format": "<lvl>{time:YYYY:MM:DD-HH:mm:ss:ZZ} {message}</lvl>",
+                "level": cli_kwargs["log_level"],
+            }
+        ]
+    }
+
+    output_file = cli_kwargs["output_file"]
+    if output_file is not None:
+        output_sink = {
+            "sink": output_file,
+            "serialize": False,
+            "format": "{time:YYYY:MM:DD-HH:mm:ss:ZZ} {message}",
+            "level": cli_kwargs["log_level"]
+        }
+        log_config["handlers"].append(output_sink)
+
+    logger.configure(**log_config)
+
