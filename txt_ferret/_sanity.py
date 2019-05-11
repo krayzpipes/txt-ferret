@@ -3,7 +3,13 @@ import re
 def luhn(account_string):
     """Checks a string of digits to see if it passes the Luhn test.
 
-    This is
+    This is based on the algorithm example found on the wikipedia
+    article for luhn algorithm:
+
+    https[:]//en[dot]wikipedia[dot]org/wiki/Luhn_algorithm
+
+    :param account_string: The string of digits to be tested by the
+    luhn algorithm.
     """
 
     no_special_chars = re.sub("[\W_]", "", account_string)
@@ -22,14 +28,21 @@ def luhn(account_string):
         return (evens + odds) % 10 == 0
 
 
+# Mapping used in 'sanity_check' function. Future sanity checks need
+# to be added to this map.
 sanity_mapping = {
     "luhn": luhn,
 }
 
 
 def sanity_check(sanity_check_name, data, sanity_map=None):
+    """Checks data to see if it passes the required sanity checks.
+
+
+    """
+    _sanity_mapping = sanity_map or sanity_mapping
     try:
-        _sanity_algorithm = sanity_mapping[sanity_check_name]
+        _sanity_algorithm = _sanity_mapping[sanity_check_name]
     except KeyError:
         raise ValueError(f"Sanity algorithm {sanity_check_name} does not exist.")
     else:

@@ -2,7 +2,6 @@ from datetime import datetime
 from pathlib import Path
 import re
 import sys
-import json
 
 from loguru import logger
 

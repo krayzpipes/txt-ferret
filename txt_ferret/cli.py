@@ -1,4 +1,3 @@
-import json
 import sys
 
 import click
@@ -65,7 +64,8 @@ cli.add_command(dump_config)
 
 
 def set_logger(**cli_kwargs):
-    # logger.level(cli_kwargs["log_level"])
+    """Customizes log output and adds output file sync if requested."""
+
     log_config = {
         "handlers": [
             {
@@ -77,6 +77,7 @@ def set_logger(**cli_kwargs):
     }
 
     output_file = cli_kwargs["output_file"]
+
     if output_file is not None:
         output_sink = {
             "sink": output_file,
