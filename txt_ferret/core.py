@@ -1,7 +1,6 @@
 from datetime import datetime
 from pathlib import Path
 import re
-import json
 
 from loguru import logger
 
@@ -10,6 +9,17 @@ from ._sanity import sanity_check
 
 
 def tokenize(clear_text, mask, index, tokenize=True, show_matches=False):
+    """Return string as redacted, tokenized format, or clear text.
+
+    :param clear_text: The text to be tokenized.
+    :param mask: The mask to be applied to the clear text.
+    :param index: Which index in the clear_text string the mask should
+        start at.
+    :param tokenize: Bool representing whether the clear text should be
+        tokenized or not.
+    :param show_matches: Bool representing whether the clear text should
+        be redacted all together or not.
+    """
     if not show_matches:
         return "REDACTED"
     if not tokenize:
@@ -18,6 +28,12 @@ def tokenize(clear_text, mask, index, tokenize=True, show_matches=False):
 
 
 def _get_tokenized_string(text, mask, index):
+    """Return tokenized string.
+
+    :Note: If the mask length will cause the final string to be longer
+        than the original string, then the mask will be cut down to
+        size.
+    """
     end_index = index + len(mask)
     text_length = len(text)
     if (text_length - 1) < end_index:
@@ -26,6 +42,15 @@ def _get_tokenized_string(text, mask, index):
     return f"{text[:index]}{mask}{text[end_index:]}"
 
 def _byte_code_to_string(byte_code):
+    """Return the UTF-8 form of a byte code.
+
+    :param byte_code: String that may contain a string that matches the
+        bytcode format defined by txt-ferret. (Ex: Start of Header would
+        be passed into this function as 'b01' instead of '\x01' as
+        there are issues passing backslashes through the CLI arguments.
+
+    :return: UTF-8 version of byte-code.
+    """
     match = re.match("b(\d{1,3})", byte_code)
     if not match:
         return byte_code
@@ -33,6 +58,18 @@ def _byte_code_to_string(byte_code):
     return bytes((code_,)).decode('utf-8')
 
 class Filter:
+    """ Helper class to  hold filter configurations and add a simple
+    API to interface with Filter attributes.
+
+    :attribute label: The name of the filter in question.
+    :attribute pattern: The regular expression that will be used to
+        match text.
+    :attribute type: A classification of the filter.
+    :attribute sanity: The name of the sanity check (ex: 'luhn').
+    :attribute token_mask: Mask used to mask filter results.
+    :attribute token_index: Index in clear-text string in which the
+        mask should start being applied.
+    """
     def __init__(self, filter_dict):
 
         self.label = filter_dict.get("label", "NOT_DEFINED")
@@ -230,12 +267,12 @@ def log_success(filter_, index, string_, column=None):
     matched_string = string_
     if column:
         message = (
-            f"Matched and passed sanity - Filter: {filter_.label}, "
+            f"PASSED sanity and matched regex - Filter: {filter_.label}, "
             f"Line {index + 1}, String: {matched_string}, Column: {column}"
         )
     else:
         message = (
-            f"Matched and passed sanity - Filter: {filter_.label}, "
+            f"PASSED sanity and matched regex - Filter: {filter_.label}, "
             f"Line {index + 1}, String: {matched_string}"
         )
     logger.info(message)
@@ -244,12 +281,12 @@ def log_success(filter_, index, string_, column=None):
 def log_failure(filter_, index, column=None, config=None):
     if column:
         message = (
-            f"Matched and FAILED sanity - Filter: {filter_.label}, "
+            f"FAILED sanity and matched regex - Filter: {filter_.label}, "
             f"Line: {index + 1}, Column: {column + 1}"
         )
     else:
         message = (
-            f"Matched and FAILED sanity - Filter: {filter_.label}, "
+            f"FAILED sanity and matched regex - Filter: {filter_.label}, "
             f"Line: {index + 1}"
         )
     logger.debug(message)
