@@ -1,7 +1,7 @@
 import re
 
 def luhn(account_string):
-    """Checks a string of digits to see if it passes the Luhn test.
+    """Return bool if string passes Luhn test.
 
     This is based on the algorithm example found on the wikipedia
     article for luhn algorithm:
@@ -9,7 +9,12 @@ def luhn(account_string):
     https[:]//en[dot]wikipedia[dot]org/wiki/Luhn_algorithm
 
     :param account_string: The string of digits to be tested by the
-    luhn algorithm.
+        luhn algorithm.
+
+    :raises ValueError: Input couldn't be converted to int type.
+
+    :return: True or False depending on if account_string passes Luhn
+        test.
     """
 
     no_special_chars = re.sub("[\W_]", "", account_string)
@@ -17,7 +22,7 @@ def luhn(account_string):
     try:
         # doubled_tuple:
         # Note that each number is the index doubled, OR it is the
-        # difference of the index doubled and ten. This is required
+        # difference of the index doubled and 9. This is required
         # as part of the luhn calculations.
         doubled_tuple = (0, 2, 4, 6, 8, 1, 3, 5, 7, 9)
         evens = sum(int(even_num) for even_num in no_special_chars[-1::-2])
@@ -36,9 +41,16 @@ sanity_mapping = {
 
 
 def sanity_check(sanity_check_name, data, sanity_map=None):
-    """Checks data to see if it passes the required sanity checks.
+    """Return bool representing whether the sanity check passed or not.
 
+    :param sanity_check_name: Name of the sanity check to be
+        performed. (Ex: 'luhn')
+    :param data: Data to be validated by the sanity check.
+    :param sanity_map: Map of sanity checks. Mostly here for tests.
 
+    :raises ValueError: Sanity check does not exist.
+
+    :return: True or False depending on if the data passes sanity check.
     """
     _sanity_mapping = sanity_map or sanity_mapping
     try:

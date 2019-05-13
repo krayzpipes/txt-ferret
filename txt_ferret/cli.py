@@ -46,7 +46,7 @@ def cli():
 )
 @click.argument("file_name")
 def scan(**cli_kwargs):
-    # Code to run scan
+    """Kicks off scanning of user-defined file(s)."""
     set_logger(**cli_kwargs)
     ferret = TxtFerret(**cli_kwargs)
     ferret.scan_file()
@@ -55,7 +55,7 @@ def scan(**cli_kwargs):
 @click.command()
 @click.argument("file_name")
 def dump_config(file_name):
-    # Dump config code
+    """Writes default config to user-specified file location."""
     config = load_config()
     save_config(config, file_name)
 
@@ -64,8 +64,17 @@ cli.add_command(dump_config)
 
 
 def set_logger(**cli_kwargs):
-    """Customizes log output and adds output file sync if requested."""
+    """Configured logger.
 
+    Sets up handlers for stdout and for output file if the user
+    passed an output file name.
+
+    Sets up message format and level.
+
+    :param cli_kwargs: The key/value pairs depicting the CLI arguments
+        given by the user.
+    """
+    # Setup basic log config including a sink for stdout.
     log_config = {
         "handlers": [
             {
@@ -78,6 +87,8 @@ def set_logger(**cli_kwargs):
 
     output_file = cli_kwargs["output_file"]
 
+    # If output file is defined, create a sink for it and add it to
+    # the logger.
     if output_file is not None:
         output_sink = {
             "sink": output_file,
