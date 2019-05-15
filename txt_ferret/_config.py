@@ -10,13 +10,7 @@ current_dir = os.path.abspath(os.path.dirname(__file__))
 _allowed_top_level = {"filters", "settings"}
 
 # Keys allowed for a filter in the config YAML file.
-_allowed_filter_keys = {
-    "label",
-    "type",
-    "pattern",
-    "tokenize",
-    "sanity",
-}
+_allowed_filter_keys = {"label", "type", "pattern", "tokenize", "sanity"}
 
 # Keys allowed for the filter.tokenize values.
 _allowed_tokenize_keys = {"mask", "index"}
@@ -31,9 +25,8 @@ _allowed_settings_keys = {
     "summarize",
     "output_file",
     "show_matches",
-    "delimiter"
+    "delimiter",
 }
-
 
 
 def _load_config(yaml_file=None):
@@ -117,10 +110,12 @@ def _add_user_config_file(config_, yaml_file, default_override):
 
     return config_
 
+
 def save_config(data, file_name):
     """Write default config to file of user's choice for future ref."""
     with open(file_name, "w+") as wf:
         yaml.dump(data, wf, default_flow_style=False)
+
 
 def _top_level_keys_allowed(key_list, allowed=None):
     """Return True if given keys are all allowed keys for top level."""
@@ -153,12 +148,14 @@ def _filter_have_required_keys(key_list, required=None):
         return False
     return True
 
+
 def _filter_settings_keys_allowed(key_list, allowed=None):
     """Return True if all keys are allowed settings keys."""
     settings_keys_allowed = allowed or _allowed_settings_keys
     if set(key_list) - settings_keys_allowed:
         return False
     return True
+
 
 def validate_config(config_dict):
     """Raise error if configuration is not valid."""
@@ -181,9 +178,9 @@ def validate_config(config_dict):
 
             if filter_.get("tokenize", None) is not None:
                 if not _filter_tokenize_keys_allowed(filter_["tokenize"].keys()):
-                        raise ValueError(
-                            "Bad config: One or more filter token keys is not allowed."
-                        )
+                    raise ValueError(
+                        "Bad config: One or more filter token keys is not allowed."
+                    )
 
     # Validate the settings portion of the config.
     if "settings" in config_dict:

@@ -10,6 +10,7 @@ from .core import TxtFerret
 def _get_settings_dict(*args):
     pass
 
+
 @click.group()
 def cli():
     pass
@@ -17,31 +18,37 @@ def cli():
 
 @click.command()
 @click.option(
-    "--no-tokenize", "-nt", is_flag=True,
-    help="When set, the output from the scan will not be tokenized."
+    "--no-tokenize",
+    "-nt",
+    is_flag=True,
+    help="When set, the output from the scan will not be tokenized.",
 )
 @click.option(
-    "--log-level", "-l", default="INFO",
+    "--log-level",
+    "-l",
+    default="INFO",
     help="Log level (cautious of file size for debug): INFO, WARNING, ERROR, DEBUG",
 )
+@click.option("--summarize", "-s", is_flag=True, help="Summarize output")
 @click.option(
-    "--summarize", "-s", is_flag=True,
-    help="Summarize output",
-)
-@click.option(
-    "--output-file", "-o", default=None,
+    "--output-file",
+    "-o",
+    default=None,
     help="Write output to file specified by this switch.",
 )
 @click.option(
-    "--config-file", "-c", default=None,
-    help="Load user-defined config file."
+    "--config-file", "-c", default=None, help="Load user-defined config file."
 )
 @click.option(
-    "--config-override", "-co", is_flag=True,
+    "--config-override",
+    "-co",
+    is_flag=True,
     help="Delete default filters and only use user-defined filters from config file.",
 )
 @click.option(
-    "--delimiter", "-d", default="",
+    "--delimiter",
+    "-d",
+    default="",
     help="Delimiter to use for field parsing instead of line parsing.",
 )
 @click.argument("file_name")
@@ -58,6 +65,7 @@ def dump_config(file_name):
     """Writes default config to user-specified file location."""
     config = load_config()
     save_config(config, file_name)
+
 
 cli.add_command(scan)
 cli.add_command(dump_config)
@@ -94,9 +102,8 @@ def set_logger(**cli_kwargs):
             "sink": output_file,
             "serialize": False,
             "format": "{time:YYYY:MM:DD-HH:mm:ss:ZZ} {message}",
-            "level": cli_kwargs["log_level"]
+            "level": cli_kwargs["log_level"],
         }
         log_config["handlers"].append(output_sink)
 
     logger.configure(**log_config)
-

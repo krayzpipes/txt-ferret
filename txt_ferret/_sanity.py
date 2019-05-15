@@ -1,5 +1,6 @@
 import re
 
+
 def luhn(account_string):
     """Return bool if string passes Luhn test.
 
@@ -35,9 +36,7 @@ def luhn(account_string):
 
 # Mapping used in 'sanity_check' function. Future sanity checks need
 # to be added to this map.
-sanity_mapping = {
-    "luhn": luhn,
-}
+sanity_mapping = {"luhn": luhn}
 
 
 def sanity_check(sanity_check_name, data, sanity_map=None):
