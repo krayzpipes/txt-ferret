@@ -14,7 +14,7 @@ from setuptools import setup
 from codecs import open
 from os import path
 
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 description = "Scan text files for sensitive (or non-sensitive) data."
 
 here = path.abspath(path.dirname(__file__))
@@ -73,7 +73,7 @@ setup(
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    packages=["txt_ferret"],
+    packages=["txtferret"],
 
 
     # Alternatively, if you want to distribute just a my_module.py, uncomment
@@ -88,7 +88,7 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'txt_ferret=txt_ferret:main',
+            'txtferret=txtferret:main',
         ],
     }
 )

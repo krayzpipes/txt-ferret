@@ -1,4 +1,5 @@
 
+default_yaml = """
 settings:
   tokenize: Yes
   log_level: INFO
@@ -43,3 +44,4 @@ filters:
     tokenize:
       mask: XXXXXXXXXXXX
       index: 2
+"""
