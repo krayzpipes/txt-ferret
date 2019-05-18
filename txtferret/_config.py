@@ -2,9 +2,8 @@ import os
 
 import yaml
 
+from ._default import default_yaml
 
-# Current directory for referencing the default YAML file.
-current_dir = os.path.abspath(os.path.dirname(__file__))
 
 # Keys allowed in top lovel of config.
 _allowed_top_level = {"filters", "settings"}
@@ -38,15 +37,16 @@ def _load_config(yaml_file=None):
         return yaml.safe_load(f)
 
 
-def _load_default_config(yaml_file="_default.yaml"):
-    """Return a dict containing default config YAML file content.
+def _load_default_config(yaml_file=None):
+    """Return a dict containing default config YAML content.
 
     :return: dict containing default config YAML file content.
     """
-    if yaml_file == "_default.yaml":
-        yaml_file = os.path.join(current_dir, yaml_file)
-    with open(yaml_file, "r") as f:
-        return yaml.safe_load(f)
+    if yaml_file is not None:
+        with open(yaml_file, "r") as f:
+            return yaml.safe_load(f)
+    return yaml.safe_load(default_yaml)
+
 
 
 def load_config(yaml_file=None, default_override=False):
