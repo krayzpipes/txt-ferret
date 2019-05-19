@@ -27,19 +27,26 @@ def bad_luhn_fake_account_num_delims():
 
 
 def test_luhn_with_passing_account_num(good_luhn_fake_account_num):
-    assert luhn(good_luhn_fake_account_num) == True, "Should have returned True"
+    rv = luhn(good_luhn_fake_account_num)
+    assert rv == True, "Should have returned True"
+    assert isinstance(rv, bool), "Return value should be a bool"
 
 
 def test_luhn_with_failing_account_num(bad_luhn_fake_account_num):
-    assert luhn(bad_luhn_fake_account_num) == False, "Should have returned False"
+    rv = luhn(bad_luhn_fake_account_num)
+    assert rv == False, "Should have returned False"
+    assert isinstance(rv, bool), "Return value should be a bool"
 
 
 def test_luhn_with_passing_account_num_and_delims(good_luhn_fake_account_num_delims):
-    assert luhn(good_luhn_fake_account_num_delims) == True, "Should have returned True"
-
+    rv = luhn(good_luhn_fake_account_num_delims)
+    assert  rv == True, "Should have returned True"
+    assert isinstance(rv, bool), "Return value should be a bool"
 
 def test_luhn_with_failing_account_num_and_delims(bad_luhn_fake_account_num_delims):
-    assert luhn(bad_luhn_fake_account_num_delims) == False, "Should have returned False"
+    rv = luhn(bad_luhn_fake_account_num_delims)
+    assert  rv == False, "Should have returned False"
+    assert isinstance(rv, bool), "Return value should be a bool"
 
 
 def test_luhn_for_value_error():
@@ -77,14 +84,18 @@ def test_sanity_check_passes_sanity(always_true_algorithm_stub):
     name = "always_true"
     test_sanity_map = {name: always_true_algorithm_stub}
     data = "placeholder"
-    assert sanity_check(name, data, sanity_map=test_sanity_map) == True
+    rv = sanity_check(name, data, sanity_map=test_sanity_map)
+    assert rv == True, "Should have returned True"
+    assert isinstance(rv, bool), "Return value should have been a bool"
 
 
 def test_sanity_check_fails_sanity(always_false_algorithm_stub):
     name = "always_false"
     test_sanity_map = {name: always_false_algorithm_stub}
     data = "placeholder"
-    assert sanity_check(name, data, sanity_map=test_sanity_map) == False
+    rv = sanity_check(name, data, sanity_map=test_sanity_map)
+    assert rv == False, "Should have returned False"
+    assert isinstance(rv, bool), "Return value should have been a bool"
 
 
 def test_sanity_check_algorithm_name_doesnt_exist():
