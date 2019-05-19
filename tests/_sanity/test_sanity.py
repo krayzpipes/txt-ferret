@@ -1,21 +1,25 @@
-
 import pytest
 
 from txtferret._sanity import luhn, sanity_check
 
+
+# LUHN Algorithm Tests
 
 
 @pytest.fixture(scope="module")
 def good_luhn_fake_account_num():
     return "100102030405060708094"
 
+
 @pytest.fixture(scope="module")
 def bad_luhn_fake_account_num():
     return "100102030405060708095"
 
+
 @pytest.fixture(scope="module")
 def good_luhn_fake_account_num_delims():
     return "1-0010-2030-4050-6070-8094"
+
 
 @pytest.fixture(scope="module")
 def bad_luhn_fake_account_num_delims():
@@ -50,10 +54,14 @@ def test_luhn_for_value_error_with_delimeters():
         _ = luhn(non_int_with_delims)
 
 
+# Sanity check function tests
+
+
 @pytest.fixture(scope="module")
 def always_true_algorithm_stub():
     def stub_func(not_used):
         return True
+
     return stub_func
 
 
@@ -61,6 +69,7 @@ def always_true_algorithm_stub():
 def always_false_algorithm_stub():
     def stub_func(not_used):
         return False
+
     return stub_func
 
 
