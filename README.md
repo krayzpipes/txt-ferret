@@ -18,11 +18,11 @@ $ source venv/bin/activate
 ```
 
 ```bash
-(venv) $ pip install -r requirements.txt
+(venv) $ python setup.py install
 ```
 
 ```bash
-(venv) $ python txtferret.py scan my_file.txt
+(venv) $ txtferret scan my_file.txt
 ```
 
 ## What is this for?
@@ -31,7 +31,7 @@ $ source venv/bin/activate
 - Tokenizes data so you don't expand the scope of your data problem by writing sensitive data
 to log files or stdout.
 - Performs sanity checks on matched data:
-    - For example: Credit card numbers are run through a Luhn algorithm to reduce false positives.
+    - For example: Credit card numbers can be run through a Luhn algorithm to reduce false positives.
 
 ## Configuration
 
@@ -39,15 +39,19 @@ There are two ways to configure txt-ferret. You can make changes or add filters 
 custom configuration file (based on the default YAML file) or you can add some settings via
 CLI switches.
 
-### Configuration file
+- CLI Switches will always win/take precedence.
+- User-defined configuration file will always beat the default configuration.
+- If any settings are not defined in a user-file configuration by cli switches, then the default
+setting will be applied.
 
-Txt-ferret comes with a default yaml config file which you can dump into any directory
+
+Txt-ferret comes with a default config which you can dump into any directory
 you wish and change it or use it for reference. If you change the file, you have to
 specifiy it with the appropriate CLI switch in order for the script to use it. See the
 CLI section below.
 
 ```bash
-(venv) $ python txtferret dump-config /file/to/write/to.yaml
+(venv) $ txtferret dump-config /file/to/write/to.yaml
 ```
 There are two sections of the config file: `filters` and `settings`.
 
@@ -68,8 +72,9 @@ filters:
     - This will be displayed in the logs when the filter in question has matched a string.
 - **Pattern:**
     - The regular expression which will be used to find data in the file.
-    - __Note: Must have a single quote on
-    each end for the pyyaml library to use it correctly.__
+    - Any regular expression compatible with the python `re` library should work.
+    - __Note: It is handy to surround your regex with single quotes. I've observed issues
+    with pyyaml when single quotes do not surround the regex pattern.__
 - **Sanity:**
     - This is the algorithm to use with this filter in order to validate the data is really what you're
     looking for. For example, 16 digits might just be a random number and not a credit card. Putting the
@@ -88,52 +93,89 @@ filters:
 
 ```yaml
 settings:
+  tokenize: Yes
   log_level: INFO
-  output_file: null
-  summarize: false
-  tokenize: true
+  summarize: No
+  output_file:
+  show_matches: Yes
+  delimiter:
 ```
 
+
+
+
+- **tokenize**
+    - If set to true, the token mask defined in the filter will be used to mask the data during output.
+    - If no mask is set for a filter, the program will tokenize with a default mask.
+    - This is set to 'true' by default.
+    - **CLI** - The `-nt` switch can be used to turn off tokenization'
+    ```bash
+    $ txtferret scan ../fake_ccn_data.txt
+    2017:05:20-00:24:52:-0400 PASSED sanity and matched regex - Filter: fake_ccn_account_filter, Line 1, String: 10XXXXXXXXXXXXXXXXXXX
+  
+    $ txtferret scan -nt ../fake_ccn_data.txt
+    2017:05:20-00:26:18:-0400 PASSED sanity and matched regex - Filter: fake_ccn_account_filter, Line 1, String: 100102030405060708094
+    ```
 - **log_level:**
     - This is the log level which you wish to use. `INFO` will only provide output for filters that
-    have matchad AND passed the associated sanity check(s). `DEBUG` will log both matched/check filters
+    have matched AND passed the associated sanity check(s). `DEBUG` will log both matched/checked filters
     as well as filters that matched but did NOT pass the sanity check(s).
-- **output_file**
-    - Add the absolute path to a file in which you would like to write results to.
+    - **CLI** - The `-l` switch will allow you to change log levels:
+    ```bash
+    $ txtferret scan ../fake_ccn_data.txt
+    2019:05:20-00:36:00:-0400 PASSED sanity and matched regex - Filter: fake_ccn_account_filter, Line 1, String: 10XXXXXXXXXXXXXXXXXXX
+  
+    $ txtferret scan -l DEBUG ../fake_ccn_data.txt
+    2019:05:20-01:02:07:-0400 PASSED sanity and matched regex - Filter: fake_ccn_account_filter, Line 1, String: 10XXXXXXXXXXXXXXXXXXX
+    2019:05:20-01:02:07:-0400 FAILED sanity and matched regex - Filter: fake_ccn_account_filter, Line: 2
+    ```
 - **summarize**
     - If set to true, the script will only output a list of three data points:
         - The number of matches that did not pass sanity checks.
         - The number of matches that did pass sanity checks.
         - The time it took to finish searching the file.
-- **tokenize**
-    - If set to true, the token mask defined in the filter will be used to mask the data during output.
-    - If no mask is set for a filter, the program will tokenize with a default mask.
-    - This is set to 'true' by default.
+    - **CLI** - The `-s` switch will kickoff the summary.
+    ```bash
+    $ txtferret scan ../fake_ccn_data.txt
+    2019:05:20-00:36:00:-0400 PASSED sanity and matched regex - Filter: fake_ccn_account_filter, Line 1, String: 10XXXXXXXXXXXXXXXXXXX
+ 
+    $ txtferret scan -s ../fake_ccn_data.txt
+    2019:05:20-01:05:29:-0400 SUMMARY:
+    2019:05:20-01:05:29:-0400   - Matched regex, failed sanity: 1
+    2019:05:20-01:05:29:-0400   - Matched regex, passed sanity: 1
+    2019:05:20-01:05:29:-0400 Finished in 0 seconds (~0 minutes)
+    
+    ```
+- **output_file**
+    - Add the absolute path to a file in which you would like to write results to.
+    - **CLI** - Use the `-o` switch to set an output file.
+    ```bash
+    $ txtferret scan -o my_output.log file_to_scan.txt
+    ```
+- **show_matches**
+    - If this is set to 'No', then it will redact the matched string all-together in output.
+    Be careful that you do not override this setting via a CLI switch unless it is on purpose.
+- **delimiter**
+    - Define a delimiter. This delimiter will be used to split each line from the txt file into
+    columns. Then txtferret will apply regex filters to each field instead of the entire line.
+    NOTE: THIS GREATLY SLOWS DOWN THIS SCRIPT. One benefit of this functionality is that the
+    output will provide you with the column in which the regex matched.
+    - You can define a byte-code delimiter by using `b` followed by the code. For example, `b1` will
+    use Start of Header as a delimiter (\x01 in hex)
+    - **CLI** - Use the `-d` switch to set a delimiter and scan per column instead of line.
+    ```bash
+    $ txtferret scan ../fake_ccn_data.txt
+    2019:05:20-00:36:00:-0400 PASSED sanity and matched regex - Filter: fake_ccn_account_filter, Line 1, String: 10XXXXXXXXXXXXXXXXXXX
 
-### Configuration via CLI
+    $ txtferret scan -d , ../fake_ccn_CSV_file.csv
+    2019:05:20-01:12:18:-0400 PASSED sanity and matched regex - Filter: fake_ccn_account_filter, Line 1, String: 10XXXXXXXXXXXXXXXXXXX, Column: 3
+    ```
 
-You can configure the script through various switches when calling the script via the CLI. **NOTE:** The
-switches must be used with each call. If you do not use the switches, the default configuration will be used.
+# Development
 
-For example, you can use a custom config file which you may have changed settings or added new filters to be
-used in addition to the existing filters:
+## Running Tests
 
 ```bash
-(venv) $ python txtferret.py scan --config-file custom_config.yaml file_to_scan.txt
-```
-
-Or you may want to completely override the default filters and ONLY use the filters you have defined:
-
-```bash
-(venv) $ python txtferret.py scan --config-file custom_config.yaml --config-override file_to_scan.txt
-```
-
-You can also change items in the `settings` portion of the config file just by using switches. Here is output
-from the CLI help file:
-
-You can see these options by running the following command:
-
-```bash
-(venv) $ python txtferret.py scan --help
+$ pytest txt-ferret/tests/
 ```
 

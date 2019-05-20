@@ -73,7 +73,9 @@ def load_config(yaml_file=None, default_override=False, config_=None):
     # Mix in the user config if present and return it.
     # If default_override is True, we should return filters ONLY
     # defined by the user.
-    return _add_user_config_file(working_config, yaml_file, default_override)
+    return _add_user_config_file(
+        config_=working_config, yaml_file=yaml_file, default_override=default_override
+    )
 
 
 def _add_user_config_file(
@@ -190,7 +192,7 @@ def validate_config(
             # set (The actual keys).
             required_filter_keys = required_keys or _required_filter_keys
 
-            if not subset_check(subset=required_filter_keys, set_=filter_keys):
+            if not subset_check(subset=required_filter_keys, set_=_filter_keys):
                 raise ValueError(
                     "Bad config: One or more filters does not have required keys."
                 )

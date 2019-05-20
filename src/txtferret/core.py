@@ -143,7 +143,9 @@ class TxtFerret:
 
     def __init__(self, file_name=None, config_file=None, config_=None, **cli_settings):
         """Initialize the TxtFerret object."""
-        config = config_ or load_config(yaml_file=config_file)
+        config = config_ or load_config(
+            yaml_file=config_file, default_override=cli_settings["config_override"],
+        )
         self.file_name = file_name
 
         # Set settings from file.
