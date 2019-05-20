@@ -12,7 +12,7 @@ _allowed_top_level = {"filters", "settings"}
 _allowed_filter_keys = {"label", "type", "pattern", "tokenize", "sanity"}
 
 # Keys allowed for the filter.tokenize values.
-_allowed_tokenize_keys = {"mask", "index"}
+_allowed_token_keys = {"mask", "index"}
 
 # Keys required for a filter to pass validation.
 _required_filter_keys = {"label", "pattern"}
@@ -37,16 +37,13 @@ def _load_config(yaml_file=None):
         return yaml.safe_load(f)
 
 
-def _load_default_config(yaml_file=None):
+def _load_default_config(config_string=None):
     """Return a dict containing default config YAML content.
 
     :return: dict containing default config YAML file content.
     """
-    if yaml_file is not None:
-        with open(yaml_file, "r") as f:
-            return yaml.safe_load(f)
-    return yaml.safe_load(default_yaml)
-
+    default_yaml_config = config_string or default_yaml
+    return yaml.safe_load(default_yaml_config)
 
 
 def load_config(yaml_file=None, default_override=False):
@@ -117,42 +114,24 @@ def save_config(data, file_name):
         yaml.dump(data, wf, default_flow_style=False)
 
 
-def _top_level_keys_allowed(key_list, allowed=None):
-    """Return True if given keys are all allowed keys for top level."""
-    top_level_allowed = allowed or _allowed_top_level
-    if set(key_list) - top_level_allowed:
-        return False
-    return True
+def subset_check(subset=None, set_=None):
+    """Return True/False depending on if set is subset of larger set.
 
+    If subset - set_ != 0, then subset contains keys that are not in
+    set_.
 
-def _filter_keys_allowed(key_list, allowed=None):
-    """Return True if given keys are all allowed keys for filters."""
-    filter_keys_allowed = allowed or _allowed_filter_keys
-    if set(key_list) - filter_keys_allowed:
-        return False
-    return True
+    set_ is our 'allowed keys' in this use case.
 
+    Another use case is testing if a required subset exists in set_.
+    For example, looking for keys that are REQUIRED to be in the config.
 
-def _filter_tokenize_keys_allowed(key_list, allowed=None):
-    """Return True if filter.tokenize keys are all allowed."""
-    filter_tokenize_keys_allowed = allowed or _allowed_tokenize_keys
-    if set(key_list) - filter_tokenize_keys_allowed:
-        return False
-    return True
+    :param subset: The set we are checking to see if it is a subset of
+        set_.
+    :param set_: The set_ being tested against.
 
-
-def _filter_have_required_keys(key_list, required=None):
-    """Return True if given keys contain all required keys."""
-    required_ = required or _required_filter_keys
-    if required_ - set(key_list):
-        return False
-    return True
-
-
-def _filter_settings_keys_allowed(key_list, allowed=None):
-    """Return True if all keys are allowed settings keys."""
-    settings_keys_allowed = allowed or _allowed_settings_keys
-    if set(key_list) - settings_keys_allowed:
+    :return: True if subset, False if it isn't.
+    """
+    if subset - set_:
         return False
     return True
 
@@ -161,28 +140,41 @@ def validate_config(config_dict):
     """Raise error if configuration is not valid."""
 
     # Make sure only allowed values at top level of config.
-    if not _top_level_keys_allowed(config_dict.keys()):
+    top_level_keys = set(config_dict.keys())
+
+    if not subset_check(subset=top_level_keys, set_=_allowed_top_level):
         raise ValueError("Bad config: One or more top-lvel keys are not allowed.")
 
     # Validate the filters portion of the config.
     if "filters" in config_dict:
         for filter_ in config_dict["filters"]:
 
-            if not _filter_keys_allowed(filter_.keys()):
+            filter_keys = set(filter_.keys())
+
+            if not subset_check(subset=filter_keys, set_=_allowed_filter_keys):
                 raise ValueError("Bad config: One or more filter keys are not allowed.")
 
-            if not _filter_have_required_keys(filter_.keys()):
+            # Note, the set order is switched up here as we want to find
+            # which keys in the subset (required) are NOT in the main
+            # set (The actual keys).
+            if not subset_check(subset=_required_filter_keys, set_=filter_keys):
                 raise ValueError(
                     "Bad config: One or more filters does not have required keys."
                 )
 
             if filter_.get("tokenize", None) is not None:
-                if not _filter_tokenize_keys_allowed(filter_["tokenize"].keys()):
+
+                token_keys = set(filter_["tokenize"].keys())
+
+                if not subset_check(subset=token_keys, set_=_allowed_token_keys):
                     raise ValueError(
                         "Bad config: One or more filter token keys is not allowed."
                     )
 
     # Validate the settings portion of the config.
     if "settings" in config_dict:
-        if not _filter_settings_keys_allowed(config_dict["settings"].keys()):
+
+        settings_keys = set(config_dict["settings"].keys())
+
+        if not subset_check(subset=settings_keys, set_=_allowed_settings_keys):
             raise ValueError("Bad config: One or more settings are not allowed.")
