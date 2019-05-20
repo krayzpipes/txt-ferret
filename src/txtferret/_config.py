@@ -46,7 +46,7 @@ def _load_default_config(config_string=None):
     return yaml.safe_load(default_yaml_config)
 
 
-def load_config(yaml_file=None, default_override=False):
+def load_config(yaml_file=None, default_override=False, config_=None):
     """Return dict containing config YAML file content.
 
     If not YAML file is explicitly passed as an argument, this function
@@ -57,12 +57,13 @@ def load_config(yaml_file=None, default_override=False):
     :param default_override: If set to 'True', this will result in
         the final returned config dict containing only user-defined
         filters. The defaults will be completely overridden.
+    :param config_: Used for tests.
 
     :return: dict with the final configuration.
     """
     # Load the default config as the final config, we will make
     # adjustments as we look at the user-defined config.
-    working_config = _load_default_config()
+    working_config = config_ or _load_default_config()
 
     # Return default config if no file is defined by user or settings
     # introduced through CLI switches.
@@ -75,7 +76,13 @@ def load_config(yaml_file=None, default_override=False):
     return _add_user_config_file(working_config, yaml_file, default_override)
 
 
-def _add_user_config_file(config_, yaml_file, default_override):
+def _add_user_config_file(
+    config_=None,
+    yaml_file=None,
+    default_override=None,
+    _user_config=None,
+    validator=None,
+):
     """Return dict containing default config + user defined config.
 
     If default_override is set to 'True', then only return the
@@ -85,12 +92,17 @@ def _add_user_config_file(config_, yaml_file, default_override):
     :param yaml_file: File name of user-defined configuration.
     :param default_override: If set to True, will only return filters
         defined by the user. Default filters will not be returned.
+    :param _user_config: Configuration used for tests.
+    :param validator: Used to pass in validation stubs during tests.
 
     :return: dict containing the default + user + cli-defined
         configuration.
     """
-    user_defined_config = _load_config(yaml_file)
-    validate_config(user_defined_config)
+    user_defined_config = _user_config or _load_config(yaml_file)
+
+    _validator = validator or validate_config
+
+    _validator(user_defined_config)
 
     if "filters" in user_defined_config:
         if default_override:
@@ -136,37 +148,59 @@ def subset_check(subset=None, set_=None):
     return True
 
 
-def validate_config(config_dict):
-    """Raise error if configuration is not valid."""
+def validate_config(
+    config_dict,
+    top_level=None,
+    filter_keys=None,
+    required_keys=None,
+    token_keys=None,
+    settings_keys=None,
+):
+    """Raise error if configuration is not valid.
 
+    !! This bad boy could use some major refactoring. !!
+
+    :param config_dict: The configuration to validate.
+    :param top_level: Allowed top level keys. For testing purposes.
+    :param filter_keys: Allowed filter keys. For testing purposes.
+    :param required_keys: Required filter keys. For testing purposes.
+    :param token_keys: Allowed tokenize keys. For testing purposes.
+
+    :raises: ValueError - Bad configuration + details.
+    """
     # Make sure only allowed values at top level of config.
     top_level_keys = set(config_dict.keys())
+    allowed_top_level = top_level or _allowed_top_level
 
-    if not subset_check(subset=top_level_keys, set_=_allowed_top_level):
+    if not subset_check(subset=top_level_keys, set_=allowed_top_level):
         raise ValueError("Bad config: One or more top-lvel keys are not allowed.")
 
     # Validate the filters portion of the config.
     if "filters" in config_dict:
         for filter_ in config_dict["filters"]:
 
-            filter_keys = set(filter_.keys())
+            _filter_keys = set(filter_.keys())
+            allowed_filter_keys = filter_keys or _allowed_filter_keys
 
-            if not subset_check(subset=filter_keys, set_=_allowed_filter_keys):
+            if not subset_check(subset=_filter_keys, set_=allowed_filter_keys):
                 raise ValueError("Bad config: One or more filter keys are not allowed.")
 
             # Note, the set order is switched up here as we want to find
             # which keys in the subset (required) are NOT in the main
             # set (The actual keys).
-            if not subset_check(subset=_required_filter_keys, set_=filter_keys):
+            required_filter_keys = required_keys or _required_filter_keys
+
+            if not subset_check(subset=required_filter_keys, set_=filter_keys):
                 raise ValueError(
                     "Bad config: One or more filters does not have required keys."
                 )
 
             if filter_.get("tokenize", None) is not None:
 
-                token_keys = set(filter_["tokenize"].keys())
+                _token_keys = set(filter_["tokenize"].keys())
+                allowed_token_keys = token_keys or _allowed_token_keys
 
-                if not subset_check(subset=token_keys, set_=_allowed_token_keys):
+                if not subset_check(subset=_token_keys, set_=allowed_token_keys):
                     raise ValueError(
                         "Bad config: One or more filter token keys is not allowed."
                     )
@@ -174,7 +208,8 @@ def validate_config(config_dict):
     # Validate the settings portion of the config.
     if "settings" in config_dict:
 
-        settings_keys = set(config_dict["settings"].keys())
+        _settings_keys = set(config_dict["settings"].keys())
+        allowed_settings_keys = settings_keys or _allowed_settings_keys
 
-        if not subset_check(subset=settings_keys, set_=_allowed_settings_keys):
+        if not subset_check(subset=_settings_keys, set_=allowed_settings_keys):
             raise ValueError("Bad config: One or more settings are not allowed.")
