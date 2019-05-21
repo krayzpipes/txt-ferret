@@ -1,4 +1,10 @@
 
+"""Default YAML config.
+
+IF YOU WILL BE CHANGING THIS CONFIG FILE, be sure that you update the
+validation functions and tests for _config.py.
+"""
+
 default_yaml = """
 settings:
   tokenize: Yes
