@@ -38,7 +38,7 @@ Why use txtferret?  See the __How/why did this come about?__ section below.
     ```bash
     # Decent sized file.
     
-    $ ls -alh | grep my_ccn_data.dat
+    $ ls -alh | grep my_test_file.dat
     -rw-r--r--  1 mrferret ferrets  19G May  7 11:15 my_test_file.dat
     ```
     ```bash
