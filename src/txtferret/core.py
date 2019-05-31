@@ -1,6 +1,7 @@
 """Core classes and functions for txt_ferret."""
 
 from datetime import datetime
+import gzip
 from pathlib import Path
 import re
 
@@ -36,6 +37,10 @@ def _get_tokenized_string(text, mask, index):
         than the original string, then the mask will be cut down to
         size.
     """
+    if not isinstance(text, str):
+        text = text.decode("utf-8")
+        mask = mask.decode("utf-8")
+
     end_index = index + len(mask)
     text_length = len(text)
     if (text_length - 1) < end_index:
@@ -59,6 +64,24 @@ def _byte_code_to_string(byte_code):
         return byte_code
     code_ = int(match.group(1))
     return bytes((code_,)).decode("utf-8")
+
+
+def gzipped_file_check(file_to_scan):
+    """ Return bool based on if opening file returns UnicodeDecodeError
+
+    If UnicodeDecodeError is returned when trying to read a line of the
+    file, then we will assume this is a gzipped file.
+
+    :param file_to_scan: String containing file path/name to read.
+    :return: True if UnicodeDecodeError is detected. False if not.
+    """
+    try:
+        with open(file_to_scan, "r") as rf:
+            _ = rf.readline()
+    except UnicodeDecodeError:
+        return True
+    else:
+        return False
 
 
 class Filter:
@@ -158,6 +181,9 @@ class TxtFerret:
         self.failed_sanity = 0
         self.passed_sanity = 0
 
+        # Substitution string
+        self.sub_string = "["
+
         self.filters = [Filter(filter_dict=filter_) for filter_ in config["filters"]]
 
     def set_attributes(self, **kwargs):
@@ -210,8 +236,18 @@ class TxtFerret:
 
         file_to_scan = file_name or self.file_name
 
-        with open(file_to_scan, "r") as rf:
+        _open = open
+
+        if gzipped_file_check(file_to_scan):
+            print("open == gzip.open")
+            _open = gzip.open
+            self.filters = convert_filters_to_bytes(self.filters)
+
+        with _open(file_to_scan, "r") as rf:
             for index, line in enumerate(rf):
+
+                #if isinstance(line, bytes):
+                #    line = str(line)
 
                 # If delimiter, then treat file as if it has columns.
                 if self.delimiter:
@@ -335,6 +371,13 @@ def test_sanity(filter_, text):
         if not sanity_check(algorithm_name, text):
             return False
     return True
+
+
+def convert_filters_to_bytes(filters):
+    for filter in filters:
+        filter.regex = re.compile(filter.pattern.encode("utf-8"))
+        filter.token_mask = filter.token_mask.encode("utf-8")
+    return filters
 
 
 def log_success(filter_, index, string_, column=None):
