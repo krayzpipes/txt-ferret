@@ -1,6 +1,7 @@
 """Core classes and functions for txt_ferret."""
 
 from datetime import datetime
+import gzip
 from pathlib import Path
 import re
 
@@ -22,10 +23,19 @@ def tokenize(clear_text, mask, index, tokenize=True, show_matches=False):
     :param show_matches: Bool representing whether the clear text should
         be redacted all together or not.
     """
+
     if not show_matches:
         return "REDACTED"
+
+    # byte string can be present if source file is Gzipped
+    # convert to utf-8 string for logging/file output.
+    if not isinstance(clear_text, str):
+        clear_text = clear_text.decode("utf-8")
+        mask = mask.decode("utf-8")
+
     if not tokenize:
         return clear_text
+
     return _get_tokenized_string(clear_text, mask, index)
 
 
@@ -36,6 +46,7 @@ def _get_tokenized_string(text, mask, index):
         than the original string, then the mask will be cut down to
         size.
     """
+
     end_index = index + len(mask)
     text_length = len(text)
     if (text_length - 1) < end_index:
@@ -61,6 +72,30 @@ def _byte_code_to_string(byte_code):
     return bytes((code_,)).decode("utf-8")
 
 
+def gzipped_file_check(file_to_scan, _opener=None):
+    """ Return bool based on if opening file returns UnicodeDecodeError
+
+    If UnicodeDecodeError is returned when trying to read a line of the
+    file, then we will assume this is a gzipped file.
+
+    :param file_to_scan: String containing file path/name to read.
+    :param _opener: Used to pass file handler stub for testing.
+
+    :return: True if UnicodeDecodeError is detected. False if not.
+    """
+
+    # Use test stub or the normal 'open'
+    _open = _opener or open
+
+    try:
+        with _open(file_to_scan, "r") as rf:
+            _ = rf.readline()
+    except UnicodeDecodeError:
+        return True
+    else:
+        return False
+
+
 class Filter:
     """ Helper class to  hold filter configurations and add a simple
     API to interface with Filter attributes.
@@ -75,7 +110,7 @@ class Filter:
         mask should start being applied.
     """
 
-    def __init__(self, filter_dict):
+    def __init__(self, filter_dict, gzip):
         """Initialize the Filter object. Lots handling input from
         the config file here.
 
@@ -109,6 +144,11 @@ class Filter:
                 f"default tokenization mask and index."
             )
 
+        # If gzip, we need to use byte strings instead of utf-8
+        if gzip:
+            self.token_mask = self.token_mask.encode("utf-8")
+            self.pattern = self.pattern.encode("utf-8")
+
         try:
             self.token_index = int(filter_dict["tokenize"].get("index", 0))
         except ValueError:
@@ -124,6 +164,7 @@ class TxtFerret:
     config/settings file or CLI arguments/switches.
 
     :attribute file_name: The name of the file to scan.
+    :attribute gzip: Bool depicting if input file is gzipped
     :attribute tokenize: Determines if txt_ferret will tokenize the
         output of strings that match and pass sanity checks.
     :attribute log_level: Log level to be used by logouru.logger.
@@ -144,9 +185,16 @@ class TxtFerret:
     def __init__(self, file_name=None, config_file=None, config_=None, **cli_settings):
         """Initialize the TxtFerret object."""
         config = config_ or load_config(
-            yaml_file=config_file, default_override=cli_settings["config_override"],
+            yaml_file=config_file, default_override=cli_settings["config_override"]
         )
         self.file_name = file_name
+        self.gzip = gzipped_file_check(self.file_name)
+
+        if self.gzip:
+            logger.info(
+                f"Detected non-text file '{file_name}'... "
+                f"attempting GZIP mode (slower)."
+            )
 
         # Set settings from file.
         self.set_attributes(**config["settings"])
@@ -158,7 +206,9 @@ class TxtFerret:
         self.failed_sanity = 0
         self.passed_sanity = 0
 
-        self.filters = [Filter(filter_dict=filter_) for filter_ in config["filters"]]
+        self.filters = [
+            Filter(filter_dict=filter_, gzip=self.gzip) for filter_ in config["filters"]
+        ]
 
     def set_attributes(self, **kwargs):
         """Sets attributes for the TxtFerret object.
@@ -210,8 +260,16 @@ class TxtFerret:
 
         file_to_scan = file_name or self.file_name
 
-        with open(file_to_scan, "r") as rf:
+        if not self.gzip:
+            _open = open
+        else:
+            _open = gzip.open
+
+        with _open(file_to_scan, "r") as rf:
             for index, line in enumerate(rf):
+
+                # if isinstance(line, bytes):
+                #    line = str(line)
 
                 # If delimiter, then treat file as if it has columns.
                 if self.delimiter:

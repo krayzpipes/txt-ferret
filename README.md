@@ -4,7 +4,7 @@ Identify and classify data in your text files with Python.
 ## Description
 **Definition:** txtferret
 - A weasel-like mammal that feasts on rodents... and apparently social security numbers,
-credit card numbers, or any other data that's in your text files.
+credit card numbers, or any other data that's in your text or gzipped text files.
 
 Use custom regular expressions and sanity checks (ex: `luhn` algorithm for account numbers) to find
 sensitive data in virtually any size file via your command line.
@@ -109,12 +109,12 @@ filters:
 - **Pattern:**
     - The regular expression which will be used to find data in the file.
     - Regular expression must be compatible with the python `re` module in the standard library.
-    - Be sure that your regular expression only contains ONE capture group. For example,
+    - Be sure that your regular expression only contains ONE and ONLY ONE capture group. For example,
     if you are capturing a phone number:
         - Don't do this: `'(555-(867|555)-5309)'`
         - Do this: `'(555-(?:867|555)-5309)'`
-        - The first has two capture groups, and inner and an outer.
-        - The second has one capture group (the outer). The inner is a non-capturing
+        - The former example has two capture groups, and inner and an outer.
+        - The latter has one capture group (the outer). The inner is a non-capturing
         group as defined by starting the capture group with `?:`.
     - __Note: If you run into issues with loading a custom filter, try adding
     single-quotes around your regular expression.__
@@ -251,6 +251,10 @@ sanity check which can be paired with a DLP solution. Here are some things it wa
     - No outrageous licensing per GB of data scanned.
 - __You can contribute!__
 
+## Releases
+
+#### Version 0.0.3 - 2019-06-01
+- Added gzip detection and support.
 
 
 # Development
