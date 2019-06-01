@@ -4,7 +4,7 @@ Identify and classify data in your text files with Python.
 ## Description
 **Definition:** txtferret
 - A weasel-like mammal that feasts on rodents... and apparently social security numbers,
-credit card numbers, or any other data that's in your text files.
+credit card numbers, or any other data that's in your text or gzipped text files.
 
 Use custom regular expressions and sanity checks (ex: `luhn` algorithm for account numbers) to find
 sensitive data in virtually any size file via your command line.
@@ -251,10 +251,10 @@ sanity check which can be paired with a DLP solution. Here are some things it wa
     - No outrageous licensing per GB of data scanned.
 - __You can contribute!__
 
-# Version
+## Releases
 
-### 0.0.3 - 2019-06-01
-- Added gzip detection and streaming.
+#### Version 0.0.3 - 2019-06-01
+- Added gzip detection and support.
 
 
 # Development
