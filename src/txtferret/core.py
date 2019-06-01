@@ -23,10 +23,19 @@ def tokenize(clear_text, mask, index, tokenize=True, show_matches=False):
     :param show_matches: Bool representing whether the clear text should
         be redacted all together or not.
     """
+
     if not show_matches:
         return "REDACTED"
+
+    # byte string can be present if source file is Gzipped
+    # convert to utf-8 string for logging/file output.
+    if not isinstance(clear_text, str):
+        clear_text = clear_text.decode("utf-8")
+        mask = mask.decode("utf-8")
+
     if not tokenize:
         return clear_text
+
     return _get_tokenized_string(clear_text, mask, index)
 
 
@@ -37,10 +46,6 @@ def _get_tokenized_string(text, mask, index):
         than the original string, then the mask will be cut down to
         size.
     """
-    # TODO - Need tests for decode
-    if not isinstance(text, str):
-        text = text.decode("utf-8")
-        mask = mask.decode("utf-8")
 
     end_index = index + len(mask)
     text_length = len(text)
@@ -186,7 +191,10 @@ class TxtFerret:
         self.gzip = gzipped_file_check(self.file_name)
 
         if self.gzip:
-            logger.info("Detected non-text file... attempting GZIP mode (slower).")
+            logger.info(
+                f"Detected non-text file '{file_name}'... "
+                f"attempting GZIP mode (slower)."
+            )
 
         # Set settings from file.
         self.set_attributes(**config["settings"])
