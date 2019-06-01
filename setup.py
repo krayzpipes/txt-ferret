@@ -33,6 +33,7 @@ setup(
 
     description=description,
     long_description=long_description,
+    long_description_content_type="text/markdown",
 
     # The project's main homepage.
     url='https://github.com/krayzpipes/txt-ferret',
@@ -53,10 +54,11 @@ setup(
         'Development Status :: 4 - Beta',
 
         # Indicate who your project is intended for
-        'Intended Audience :: Data Owners',
-        "Intended Audience :: Security",
-        "Intended Audience :: IT Governance",
-        'Operating System :: OS Independent',
+        'Intended Audience :: Information Technology',
+        "Intended Audience :: Financial and Insurance Industry",
+        "Intended Audience :: System Administrators",
+        "Operating System :: OS Independent",
+        "Topic :: Security",
 
         # Pick your license as you wish (should match "license" above)
         'License :: OSI Approved :: Apache Software License',
