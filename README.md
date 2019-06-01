@@ -19,6 +19,14 @@ Why use txtferret?  See the __How/why did this come about?__ section below.
 
 # Quick Start
 
+### PyPi
+
+1. Install it
+
+    ```bash
+    $ pip3 install txtferret
+    ```
+### Repo
 1. Clone it.
     ```bash
     $ git clone git@github.com:krayzpipes/txt-ferret.git
@@ -33,7 +41,7 @@ Why use txtferret?  See the __How/why did this come about?__ section below.
     ```bash
     (venv) $ python setup.py install
     ```
-4. Run it.
+### Run it
 
     ```bash
     # Decent sized file.
