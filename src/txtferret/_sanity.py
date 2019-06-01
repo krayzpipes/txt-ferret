@@ -18,8 +18,9 @@ def luhn(account_string):
         test.
     """
 
+    # TODO - Is there a more effecient way to do this?
     if not isinstance(account_string, str):
-        account_string = account_string.decode('utf-8')
+        account_string = account_string.decode("utf-8")
 
     no_special_chars = re.sub("[\W_]", "", account_string)
 

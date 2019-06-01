@@ -251,6 +251,10 @@ sanity check which can be paired with a DLP solution. Here are some things it wa
     - No outrageous licensing per GB of data scanned.
 - __You can contribute!__
 
+# Version
+
+### 0.0.3 - 2019-06-01
+- Added gzip detection and streaming.
 
 
 # Development
