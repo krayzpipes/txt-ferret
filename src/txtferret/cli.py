@@ -53,18 +53,20 @@ def set_logger(**cli_kwargs):
     logger.configure(**log_config)
 
 
-def prep_config(**cli_kwargs):
+def prep_config(loader=None, **cli_kwargs):
     """Return a final config file to be sent to TxtFerret."""
+    _loader = loader or load_config
     file_name = cli_kwargs["config_file"]
     override = cli_kwargs["config_override"]
-    config = load_config(yaml_file=file_name, default_override=override)
+    config = _loader(yaml_file=file_name, default_override=override)
     config["cli_kwargs"] = {**cli_kwargs}
     return config
 
 
-def bootstrap(config):
+def bootstrap(config, test_class=None):
     """Bootstrap scanning a single file and return summary."""
-    ferret = TxtFerret(config)
+    ferret_class = test_class or TxtFerret
+    ferret = ferret_class(config)
     ferret.scan_file()
     return ferret.summary()
 

@@ -11,7 +11,9 @@ from ._config import _allowed_settings_keys
 from ._sanity import sanity_check
 
 
-def tokenize(clear_text, mask, index, tokenize=True, show_matches=False):
+def tokenize(
+        clear_text, mask, index, tokenize=True, show_matches=False, tokenize_func=None,
+):
     """Return string as redacted, tokenized format, or clear text.
 
     :param clear_text: The text to be tokenized.
@@ -36,7 +38,9 @@ def tokenize(clear_text, mask, index, tokenize=True, show_matches=False):
     if not tokenize:
         return clear_text
 
-    return _get_tokenized_string(clear_text, mask, index)
+    tokenize_function = tokenize_func or _get_tokenized_string
+
+    return tokenize_function(clear_text, mask, index)
 
 
 def _get_tokenized_string(text, mask, index):
@@ -329,7 +333,7 @@ class TxtFerret:
             for column_number, column_match_list in column_map.items():
                 for column_match in column_match_list:
 
-                    if not test_sanity(filter_, column_match):
+                    if not sanity_test(filter_, column_match):
                         self.failed_sanity += 1
 
                         if not self.summarize:
@@ -369,7 +373,7 @@ class TxtFerret:
                 continue
 
             for match in matches:
-                if not test_sanity(filter_, match):
+                if not sanity_test(filter_, match):
                     self.failed_sanity += 1
                     if not self.summarize:
                         log_failure(self.file_name, filter_, index)
@@ -389,17 +393,20 @@ class TxtFerret:
                     log_success(self.file_name, filter_, index, string_to_log)
 
 
-def test_sanity(filter_, text):
+def sanity_test(filter_, text, sanity_func=None):
     """Return bool depending on if text passes the sanity check.
 
     :param filter_: Filter object.
     :param text: The text being tested by the sanity check.
+    :sanity_func: Used for tests.
 
     :return: True or False - Depending on if sanity check passed
         or not.
     """
+    _sanity_checker = sanity_func or sanity_check
+
     for algorithm_name in filter_.sanity:
-        if not sanity_check(algorithm_name, text):
+        if not _sanity_checker(algorithm_name, text):
             return False
     return True
 
