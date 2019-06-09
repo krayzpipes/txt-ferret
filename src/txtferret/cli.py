@@ -1,3 +1,5 @@
+"""Handle CLI tool configuration and commands."""
+
 import copy
 from datetime import datetime
 import multiprocessing as mp
@@ -52,6 +54,7 @@ def set_logger(**cli_kwargs):
 
 
 def prep_config(**cli_kwargs):
+    """Return a final config file to be sent to TxtFerret."""
     file_name = cli_kwargs["config_file"]
     override = cli_kwargs["config_override"]
     config = load_config(yaml_file=file_name, default_override=override)
@@ -60,18 +63,21 @@ def prep_config(**cli_kwargs):
 
 
 def bootstrap(config):
+    """Bootstrap scanning a single file and return summary."""
     ferret = TxtFerret(config)
     ferret.scan_file()
     return ferret.summary()
 
 
 def get_files_from_dir(directory=None):
+    """Return list of absolute file names."""
     path = pathlib.Path(directory)
     file_names = [str(item.resolve()) for item in path.iterdir() if item.is_file()]
     return file_names
 
 
 def get_totals(results=None):
+    """Return counts for failures and successes."""
     _total_failures = 0
     _total_passes = 0
 
@@ -83,6 +89,7 @@ def get_totals(results=None):
 
 
 def log_summary(result=None, file_count=None, results=None):
+    """Log summary to logger."""
     failures = result.get("failures")
     passes = result.get("passes")
     logger.info("SUMMARY:")
@@ -99,11 +106,11 @@ def log_summary(result=None, file_count=None, results=None):
         return
 
     logger.info("FILE SUMMARIES:")
-    for result in results:
-        _name = result.get("file_name")
-        _failures = result.get("failures")
-        _passes = result.get("passes")
-        _seconds = result.get("time")
+    for _result in results:
+        _name = _result.get("file_name")
+        _failures = _result.get("failures")
+        _passes = _result.get("passes")
+        _seconds = _result.get("time")
         _mins = _seconds // 60
 
         logger.info(
@@ -114,6 +121,7 @@ def log_summary(result=None, file_count=None, results=None):
 
 @click.group()
 def cli():
+    """Placeholder"""
     pass
 
 
@@ -152,12 +160,7 @@ def cli():
     default="",
     help="Delimiter to use for field parsing instead of line parsing.",
 )
-@click.option(
-    "--bulk",
-    "-b",
-    is_flag=True,
-    help="Scan multiple files in a directory.",
-)
+@click.option("--bulk", "-b", is_flag=True, help="Scan multiple files in a directory.")
 @click.argument("file_name")
 def scan(**cli_kwargs):
     """Kicks off scanning of user-defined file(s)."""

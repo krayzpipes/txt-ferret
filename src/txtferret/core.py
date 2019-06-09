@@ -7,7 +7,7 @@ import re
 
 from loguru import logger
 
-from ._config import load_config, _allowed_settings_keys
+from ._config import _allowed_settings_keys
 from ._sanity import sanity_check
 
 
@@ -353,7 +353,7 @@ class TxtFerret:
                             filter_,
                             index,
                             string_to_log,
-                            column=int(column_number)
+                            column=int(column_number),
                         )
 
     def _scan_non_delimited_line(self, line=None, index=None):
