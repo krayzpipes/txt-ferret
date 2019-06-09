@@ -26,6 +26,7 @@ Why use txtferret?  See the __How/why did this come about?__ section below.
     ```bash
     $ pip3 install txtferret
     ```
+
 ### Repo
 1. Clone it.
     ```bash
@@ -41,6 +42,7 @@ Why use txtferret?  See the __How/why did this come about?__ section below.
     ```bash
     (venv) $ python setup.py install
     ```
+
 ### Run it
 - Example file size:
     ```bash
@@ -49,13 +51,16 @@ Why use txtferret?  See the __How/why did this come about?__ section below.
     $ ls -alh | grep my_test_file.dat
     -rw-r--r--  1 mrferret ferrets  19G May  7 11:15 my_test_file.dat
     ```
+
 - Scanning the file.
     ```bash
     # Scan the file.
     # Default behavior is to mask the string that was matched.
     
     $ txtferret scan my_test_file.dat
-    2019:05:20-22:18:18:-0400 PASSED sanity and matched regex - Filter: visa_16_ccn, Line 712567, String: 4XXXXXXXXXXXXXXX
+    2019:05:20-22:18:01:-0400 Beginning scan for /home/mrferret/Documents/test_file_1.dat
+    2019:05:20-22:18:18:-0400 PASSED sanity and matched regex - /home/mrferret/Documents/test_file_1.dat - Filter: visa_16_ccn, Line 712567, String: 4XXXXXXXXXXXXXXX
+    2019:05:20-22:19:09:-0400 Finished scan for /home/mrferret/Documents/test_file_1.dat
     2019:05:20-22:19:09:-0400 SUMMARY:
     2019:05:20-22:19:09:-0400   - Matched regex, failed sanity: 2
     2019:05:20-22:19:09:-0400   - Matched regex, passed sanity: 1
@@ -66,13 +71,42 @@ Why use txtferret?  See the __How/why did this come about?__ section below.
     # Break up each line of a CSV into columns by declaring a comma for a delimiter.
     # Scan each field in the row and return column numbers as well as line numbers.
     
-    $ txtferret scan --delimiter , my_test_file.dat
-    2019:05:20-21:44:34:-0400 PASSED sanity and matched regex - Filter: visa_16_ccn, Line 712567, String: 4XXXXXXXXXXXXXXX, Column: 171
+    $ txtferret scan --delimiter , test_file_1.csv
+    2019:05:20-21:41:57:-0400 Beginning scan for /home/mrferret/Documents/test_file_1.csv
+    2019:05:20-21:44:34:-0400 PASSED sanity and matched regex - /home/mrferret/Documents/test_file_1.csv - Filter: visa_16_ccn, Line 712567, String: 4XXXXXXXXXXXXXXX, Column: 171
+    2019:05:20-21:49:16:-0400 Finished scan for /home/mrferret/Documents/test_file_1.csv
     2019:05:20-21:49:16:-0400 SUMMARY:
     2019:05:20-21:49:16:-0400   - Matched regex, failed sanity: 2
     2019:05:20-21:49:16:-0400   - Matched regex, passed sanity: 1
     2019:05:20-21:49:16:-0400 Finished in 439 seconds (~7 minutes).
     ```
+    - Scan all files in a directory. Write results to a file and `stdout`
+    ```bash
+    # Uses multiprocessing to speed up scans of a bulk group of files
+ 
+    $ txtferret scan -o bulk_testing.log --bulk ../test_files/
+    2019:06:09-15:15:27:-0400 Detected non-text file '/home/mrferret/Documents/test_file_1.dat.gz'... attempting GZIP mode (slower).
+    2019:06:09-15:15:27:-0400 Detected non-text file '/home/mrferret/Documents/test_file_2.dat.gz'... attempting GZIP mode (slower).
+    2019:06:09-15:15:27:-0400 Beginning scan for /home/mrferret/Documents/test_file_1.dat.gz
+    2019:06:09-15:15:27:-0400 Beginning scan for /home/mrferret/Documents/test_file_2.dat.gz
+    2019:06:09-15:15:27:-0400 Beginning scan for /home/mrferret/Documents/test_file_3.dat
+    2019:06:09-15:15:27:-0400 PASSED sanity and matched regex - /home/mrferret/Documents/test_file_2.dat.gz - Filter: visa_16_ccn, Line 4, String: 4XXXXXXXXXXXXXXX026
+    2019:06:09-15:15:27:-0400 Finished scan for /home/mrferret/Documents/test_file_2.dat.gz
+    2019:06:09-15:16:04:-0400 PASSED sanity and matched regex - /home/mrferret/Documents/test_file_3.dat - Filter: visa_16_ccn, Line 712567, String: 4XXXXXXXXXXXXXXX
+    2019:06:09-15:16:51:-0400 PASSED sanity and matched regex - /home/mrferret/Documents/test_file_1.dat.gz - Filter: visa_16_ccn, Line 712567, String: 4XXXXXXXXXXXXXXX
+    2019:06:09-15:17:15:-0400 Finished scan for /home/mrferret/Documents/test_file_3.dat
+    2019:06:09-15:19:24:-0400 Finished scan for /home/mrferret/Documents/test_file_1.dat.gz
+    2019:06:09-15:19:24:-0400 SUMMARY:
+    2019:06:09-15:19:24:-0400   - Scanned 3 file(s).
+    2019:06:09-15:19:24:-0400   - Matched regex, failed sanity: 16
+    2019:06:09-15:19:24:-0400   - Matched regex, passed sanity: 3
+    2019:06:09-15:19:24:-0400   - Finished in 236 seconds (~3 minutes).
+    2019:06:09-15:19:24:-0400 FILE SUMMARIES:
+    2019:06:09-15:19:24:-0400 Matches: 1 passed sanity checks and 2 failed, Time Elapsed: 236 seconds / ~3 minutes - /home/mrferret/Documents/test_file_1.dat.gz
+    2019:06:09-15:19:24:-0400 Matches: 1 passed sanity checks and 3 failed, Time Elapsed: 0 seconds / ~0 minutes - /home/mrferret/Documents/test_file_2.dat.gz
+    2019:06:09-15:19:24:-0400 Matches: 1 passed sanity checks and 2 failed, Time Elapsed: 107 seconds / ~1 minutes - /home/mrferret/Documents/test_file_3.dat
+    ```
+    
 
 # Configuration
 
@@ -154,7 +188,13 @@ settings:
   show_matches: Yes
   delimiter:
 ```
-
+- **bulk**
+    - This setting is accessible via CLI arguments `-b` or `--bulk`.
+    - When those switches are used, pass the directory to scan instead of a single file name.
+    - Example:
+    ```bash
+    $ txtferret scan --bulk /home/mrferret/Documents
+    ```
 - **tokenize**
     - If set to true, the token mask defined in the filter will be used to mask the data during output.
     - If no mask is set for a filter, the program will tokenize with a default mask.
