@@ -19,6 +19,15 @@ Why use txtferret?  See the __How/why did this come about?__ section below.
 
 # Quick Start
 
+### PyPi
+
+1. Install it
+
+    ```bash
+    $ pip3 install txtferret
+    ```
+
+### Repo
 1. Clone it.
     ```bash
     $ git clone git@github.com:krayzpipes/txt-ferret.git
@@ -33,15 +42,15 @@ Why use txtferret?  See the __How/why did this come about?__ section below.
     ```bash
     (venv) $ python setup.py install
     ```
-4. Run it.
-    - Example file
+### Run it.
+    - Example file size:
     ```bash
     # Decent sized file.
     
     $ ls -alh | grep my_test_file.dat
     -rw-r--r--  1 mrferret ferrets  19G May  7 11:15 my_test_file.dat
     ```
-    - Scan the file
+    - Scanning the file.
     ```bash
     # Scan the file.
     # Default behavior is to mask the string that was matched.
@@ -55,7 +64,7 @@ Why use txtferret?  See the __How/why did this come about?__ section below.
     2019:05:20-22:19:09:-0400   - Matched regex, passed sanity: 1
     2019:05:20-22:19:09:-0400 Finished in 78 seconds (~1 minutes).
     ```
-    - Scan each field in a comma delimited file
+    - Scanning the file with a delimiter.
     ```bash
     # Break up each line of a CSV into columns by declaring a comma for a delimiter.
     # Scan each field in the row and return column numbers as well as line numbers.
