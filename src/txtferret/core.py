@@ -265,9 +265,12 @@ class TxtFerret:
 
         :param file_name: Name of the file to scan.
         """
+
         start = datetime.now()
 
         file_to_scan = file_name or self.file_name
+
+        logger.info(f"Beginning scan for {file_to_scan}")
 
         if not self.gzip:
             _open = open

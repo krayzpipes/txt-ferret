@@ -29,6 +29,7 @@ def set_logger(**cli_kwargs):
                 "sink": sys.stdout,
                 "format": "<lvl>{time:YYYY:MM:DD-HH:mm:ss:ZZ} {message}</lvl>",
                 "level": cli_kwargs["log_level"],
+                "enqueue": True,
             }
         ]
     }
