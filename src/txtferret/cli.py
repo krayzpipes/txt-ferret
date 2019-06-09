@@ -1,3 +1,4 @@
+import copy
 from datetime import datetime
 import multiprocessing as mp
 import pathlib
@@ -42,6 +43,7 @@ def set_logger(**cli_kwargs):
             "serialize": False,
             "format": "{time:YYYY:MM:DD-HH:mm:ss:ZZ} {message}",
             "level": cli_kwargs["log_level"],
+            "enqueue": True,
         }
         log_config["handlers"].append(output_sink)
 
@@ -64,7 +66,7 @@ def bootstrap(config):
 
 def get_files_from_dir(directory=None):
     path = pathlib.Path(directory)
-    file_names = [item.name for item in path.iterdir() if item.is_file()]
+    file_names = [str(item.resolve()) for item in path.iterdir() if item.is_file()]
     return file_names
 
 
@@ -74,23 +76,39 @@ def get_totals(results=None):
 
     for result in results:
         _total_failures += result.get("failures")
-        _total_passes += result.get("passed")
+        _total_passes += result.get("passes")
 
     return _total_failures, _total_passes
 
 
-def log_summary(result=None, file_count=None):
+def log_summary(result=None, file_count=None, results=None):
     failures = result.get("failures")
-    passed = result.get("passed")
+    passes = result.get("passes")
     logger.info("SUMMARY:")
     logger.info(f"  - Scanned {file_count} file(s).")
     logger.info(f"  - Matched regex, failed sanity: {failures}")
-    logger.info(f"  - Matched regex, passed sanity: {passed}")
+    logger.info(f"  - Matched regex, passed sanity: {passes}")
 
     seconds = result.get("time")
     minutes = seconds // 60
 
-    logger.info(f"Finished in {seconds} seconds (~{minutes} minutes).")
+    logger.info(f"  - Finished in {seconds} seconds (~{minutes} minutes).")
+
+    if results is None:
+        return
+
+    logger.info("FILE SUMMARIES:")
+    for result in results:
+        _name = result.get("file_name")
+        _failures = result.get("failures")
+        _passes = result.get("passes")
+        _seconds = result.get("time")
+        _mins = _seconds // 60
+
+        logger.info(
+            f"Matches: {_passes} passed sanity checks and {_failures} failed, "
+            f"Time Elapsed: {_seconds} seconds / ~{_mins} minutes - {_name}"
+        )
 
 
 @click.group()
@@ -163,7 +181,7 @@ def scan(**cli_kwargs):
         # Generate a config for each file name which can be passed to
         # multiprocessing...
         for file_ in file_names:
-            temp_config = {**config}
+            temp_config = copy.deepcopy(config)
             temp_config["cli_kwargs"]["file_name"] = file_
             configs.append(temp_config)
 
@@ -178,15 +196,15 @@ def scan(**cli_kwargs):
 
         total_scanned = len(results)
 
-        delta = start - end
+        delta = end - start
 
-        final_result = {
+        total_result = {
             "failures": total_failures,
             "passes": total_passes,
             "time": delta.seconds,
         }
 
-        log_summary(result=final_result, file_count=total_scanned)
+        log_summary(result=total_result, file_count=total_scanned, results=results)
 
 
 @click.command()

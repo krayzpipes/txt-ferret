@@ -182,17 +182,16 @@ class TxtFerret:
     :attribute filters: List of filters to be used during the file scan.
     """
 
-    def __init__(self, file_name=None, config_file=None, config_=None, **cli_settings):
+    def __init__(self, config):
         """Initialize the TxtFerret object."""
-        config = config_ or load_config(
-            yaml_file=config_file, default_override=cli_settings["config_override"]
-        )
-        self.file_name = file_name
+        cli_settings = config["cli_kwargs"]
+
+        self.file_name = cli_settings["file_name"]
         self.gzip = gzipped_file_check(self.file_name)
 
         if self.gzip:
             logger.info(
-                f"Detected non-text file '{file_name}'... "
+                f"Detected non-text file '{self.file_name}'... "
                 f"attempting GZIP mode (slower)."
             )
 
@@ -251,7 +250,7 @@ class TxtFerret:
         return {
             "file_name": self.file_name,
             "failures": self.failed_sanity,
-            "passed": self.passed_sanity,
+            "passes": self.passed_sanity,
             "time": self._time_delta.seconds,
         }
 
@@ -290,7 +289,9 @@ class TxtFerret:
                 self._scan_non_delimited_line(line, index)
 
         end = datetime.now()
-        self.time_delta = end - start
+        self._time_delta = end - start
+
+        logger.info(f"Finished scan for {self.file_name}")
 
     def _scan_delimited_line(self, line, index):
         """Scan a delimited line.
@@ -411,12 +412,12 @@ def log_success(file_name, filter_, index, string_, column=None):
     matched_string = string_
     if column:
         message = (
-            f"{file_name} - PASSED sanity and matched regex - Filter: {filter_.label}, "
+            f"PASSED sanity and matched regex - {file_name} - Filter: {filter_.label}, "
             f"Line {index + 1}, String: {matched_string}, Column: {column + 1}"
         )
     else:
         message = (
-            f"{file_name} - PASSED sanity and matched regex - Filter: {filter_.label}, "
+            f"PASSED sanity and matched regex - {file_name} - Filter: {filter_.label}, "
             f"Line {index + 1}, String: {matched_string}"
         )
     logger.info(message)
@@ -431,12 +432,12 @@ def log_failure(file_name, filter_, index, column=None):
     """
     if column:
         message = (
-            f"{file_name} - FAILED sanity and matched regex - Filter: {filter_.label}, "
+            f"FAILED sanity and matched regex - {file_name} - Filter: {filter_.label}, "
             f"Line: {index + 1}, Column: {column + 1}"
         )
     else:
         message = (
-            f"{file_name} - FAILED sanity and matched regex - Filter: {filter_.label}, "
+            f"FAILED sanity and matched regex - {file_name} - Filter: {filter_.label}, "
             f"Line: {index + 1}"
         )
     logger.debug(message)
