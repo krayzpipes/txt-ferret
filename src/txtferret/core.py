@@ -313,7 +313,10 @@ class TxtFerret:
             # For example... Start Of Header (SOH).
             delimiter = _byte_code_to_string(self.delimiter)
 
-            columns = line.split(delimiter)
+            if not self.gzip:
+                columns = line.split(delimiter)
+            else:
+                columns = line.split(delimiter.encode('utf-8'))
 
             # Look for matches in each column.
             for i, column in enumerate(columns):
@@ -420,7 +423,7 @@ def log_success(file_name, filter_, index, string_, column=None):
     :param column: Column which the filter matched some text.
     """
     matched_string = string_
-    if column:
+    if column is not None:
         message = (
             f"PASSED sanity and matched regex - {file_name} - Filter: {filter_.label}, "
             f"Line {index + 1}, String: {matched_string}, Column: {column + 1}"
