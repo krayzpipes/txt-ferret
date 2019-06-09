@@ -303,6 +303,9 @@ sanity check which can be paired with a DLP solution. Here are some things it wa
 
 ## Releases
 
+#### Version 0.0.4 - 2019-06-09
+- Added bulk file scanning by the `--bulk` switch.
+- Added multiprocessing for bulk scanning.
 #### Version 0.0.3 - 2019-06-01
 - Added gzip detection and support.
 
