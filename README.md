@@ -177,7 +177,7 @@ settings:
   show_matches: Yes
   delimiter:
 ```
-- **batch**
+- **bulk**
     - This setting is accessible via CLI arguments `-b` or `--bulk`.
     - When those switches are used, pass the directory to scan instead of a single file name.
     - Example:
