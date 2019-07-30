@@ -303,7 +303,7 @@ sanity check which can be paired with a DLP solution. Here are some things it wa
 
 ## Releases
 
-#### Version 0.1.0
+#### Version 0.1.0 - 2019-07-30
 - Removed the `config-override` option
 
 #### Version 0.0.4 - 2019-06-09
