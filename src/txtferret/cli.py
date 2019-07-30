@@ -57,8 +57,7 @@ def prep_config(loader=None, **cli_kwargs):
     """Return a final config file to be sent to TxtFerret."""
     _loader = loader or load_config
     file_name = cli_kwargs["config_file"]
-    override = cli_kwargs["config_override"]
-    config = _loader(yaml_file=file_name, default_override=override)
+    config = _loader(yaml_file=file_name)
     config["cli_kwargs"] = {**cli_kwargs}
     return config
 
@@ -149,12 +148,6 @@ def cli():
 )
 @click.option(
     "--config-file", "-c", default=None, help="Load user-defined config file."
-)
-@click.option(
-    "--config-override",
-    "-co",
-    is_flag=True,
-    help="Delete default filters and only use user-defined filters from config file.",
 )
 @click.option(
     "--delimiter",
