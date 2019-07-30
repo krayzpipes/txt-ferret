@@ -46,7 +46,7 @@ def _load_default_config(config_string=None):
     return yaml.safe_load(default_yaml_config)
 
 
-def load_config(yaml_file=None, config_=None):
+def load_config(yaml_file=None, config_=None, user_config_func=None):
     """Return dict containing config YAML file content.
 
     If not YAML file is explicitly passed as an argument, this function
@@ -65,7 +65,9 @@ def load_config(yaml_file=None, config_=None):
         default_config = config_ or _load_default_config()
         return default_config
 
-    return _get_user_config_file(yaml_file=yaml_file)
+    _user_config_load = user_config_func or _get_user_config_file
+
+    return _user_config_load(yaml_file=yaml_file)
 
 
 def _get_user_config_file(yaml_file=None, _user_config=None, validator=None):
