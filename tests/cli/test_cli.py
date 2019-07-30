@@ -4,21 +4,14 @@ from txtferret.cli import prep_config, bootstrap, get_totals
 
 def test_prep_config():
 
-    def stub_loader(yaml_file=None, default_override=False):
-        return {
-            "yaml_file": yaml_file,
-            "config_override": default_override,
-        }
+    def stub_loader(yaml_file=None):
+        return {"yaml_file": yaml_file,}
 
-    fake_cli_kwargs = {
-        "config_file": "my_test_file",
-        "config_override": True,
-    }
+    fake_cli_kwargs = {"config_file": "my_test_file",}
 
     final_config = {
         "cli_kwargs": {**fake_cli_kwargs},
         "yaml_file": "my_test_file",
-        "config_override": True,
     }
 
     assert prep_config(loader=stub_loader, **fake_cli_kwargs) == final_config

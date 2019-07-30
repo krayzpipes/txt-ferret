@@ -65,10 +65,10 @@ def load_config(yaml_file=None, config_=None):
         default_config = config_ or _load_default_config()
         return default_config
 
-    return _add_user_config_file(yaml_file=yaml_file)
+    return _get_user_config_file(yaml_file=yaml_file)
 
 
-def _add_user_config_file(yaml_file=None, _user_config=None, validator=None):
+def _get_user_config_file(yaml_file=None, _user_config=None, validator=None):
     """Return dict containing default config + user defined config.
 
     :param yaml_file: File name of user-defined configuration.
