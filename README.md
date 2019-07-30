@@ -303,6 +303,9 @@ sanity check which can be paired with a DLP solution. Here are some things it wa
 
 ## Releases
 
+#### Version 0.1.0
+- Removed the `config-override` option
+
 #### Version 0.0.4 - 2019-06-09
 - Added bulk file scanning by the `--bulk` switch.
 - Added multiprocessing for bulk scanning.
