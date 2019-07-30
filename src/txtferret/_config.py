@@ -46,7 +46,7 @@ def _load_default_config(config_string=None):
     return yaml.safe_load(default_yaml_config)
 
 
-def load_config(yaml_file=None, default_override=False, config_=None):
+def load_config(yaml_file=None, config_=None):
     """Return dict containing config YAML file content.
 
     If not YAML file is explicitly passed as an argument, this function
@@ -54,51 +54,28 @@ def load_config(yaml_file=None, default_override=False, config_=None):
     config file.
 
     :param yaml_file: YAMl file name containing config information.
-    :param default_override: If set to 'True', this will result in
-        the final returned config dict containing only user-defined
-        filters. The defaults will be completely overridden.
     :param config_: Used for tests.
 
     :return: dict with the final configuration.
     """
     # Load the default config as the final config, we will make
     # adjustments as we look at the user-defined config.
-    working_config = config_ or _load_default_config()
 
-    # Return default config if no file is defined by user or settings
-    # introduced through CLI switches.
     if yaml_file is None:
-        return working_config
+        default_config = config_ or _load_default_config()
+        return default_config
 
-    # Mix in the user config if present and return it.
-    # If default_override is True, we should return filters ONLY
-    # defined by the user.
-    return _add_user_config_file(
-        config_=working_config, yaml_file=yaml_file, default_override=default_override
-    )
+    return _add_user_config_file(yaml_file=yaml_file)
 
 
-def _add_user_config_file(
-    config_=None,
-    yaml_file=None,
-    default_override=None,
-    _user_config=None,
-    validator=None,
-):
+def _add_user_config_file(yaml_file=None, _user_config=None, validator=None):
     """Return dict containing default config + user defined config.
 
-    If default_override is set to 'True', then only return the
-    user-defined filters.
-
-    :param config_: dict containing config file content.
     :param yaml_file: File name of user-defined configuration.
-    :param default_override: If set to True, will only return filters
-        defined by the user. Default filters will not be returned.
     :param _user_config: Configuration used for tests.
     :param validator: Used to pass in validation stubs during tests.
 
-    :return: dict containing the default + user + cli-defined
-        configuration.
+    :return: dict containing the user-defined configuration file.
     """
     user_defined_config = _user_config or _load_config(yaml_file)
 
@@ -106,20 +83,7 @@ def _add_user_config_file(
 
     _validator(user_defined_config)
 
-    if "filters" in user_defined_config:
-        if default_override:
-            # Remove default filters completely.
-            config_["filters"] = user_defined_config["filters"]
-        else:
-            # Add user filters to default filters.
-            for filter_ in user_defined_config["filters"]:
-                config_["filters"].append(filter_)
-
-    if "settings" in user_defined_config:
-        for key, value in user_defined_config["settings"].items():
-            config_["settings"][key] = value
-
-    return config_
+    return user_defined_config
 
 
 def save_config(data, file_name):
