@@ -30,6 +30,32 @@ def test_load_default_config():
 # TODO: test _load_config
 
 
+def test_load_config_no_custom_config():
+    def stub_func(yaml_file=None):
+        return {"dont": "return_me"}
+
+    rv = load_config(
+        yaml_file=None,
+        config_={"mytest": "config"},
+        user_config_func=stub_func,
+    )
+
+    assert {"mytest": "config"} == rv, "dict should be the same"
+
+
+def test_load_config_return_custom_config():
+    def stub_func(yaml_file=None):
+        return {"my": "config"}
+
+    jv = load_config(
+        yaml_file="something",
+        config_={"dont": "return_me"},
+        user_config_func=stub_func,
+    )
+
+    assert {"my": "config"} == jv, "returned the wrong dict"
+
+
 @pytest.fixture(scope="module")
 def user_config():
     config = {
