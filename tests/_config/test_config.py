@@ -15,6 +15,7 @@ from txtferret._config import (
 
 # Test _load_default_config function
 
+
 def test_load_default_config():
     config_string = """
     settings:
@@ -35,9 +36,7 @@ def test_load_config_no_custom_config():
         return {"dont": "return_me"}
 
     rv = load_config(
-        yaml_file=None,
-        config_={"mytest": "config"},
-        user_config_func=stub_func,
+        yaml_file=None, config_={"mytest": "config"}, user_config_func=stub_func
     )
 
     assert {"mytest": "config"} == rv, "dict should be the same"
@@ -48,9 +47,7 @@ def test_load_config_return_custom_config():
         return {"my": "config"}
 
     jv = load_config(
-        yaml_file="something",
-        config_={"dont": "return_me"},
-        user_config_func=stub_func,
+        yaml_file="something", config_={"dont": "return_me"}, user_config_func=stub_func
     )
 
     assert {"my": "config"} == jv, "returned the wrong dict"
@@ -135,13 +132,12 @@ def test_get_user_config_file_valid(validator_true):
 def test_get_user_config_file_validation_failed(validator_raise):
     with pytest.raises(ValueError):
         _ = _get_user_config_file(
-            yaml_file=None,
-            _user_config={"who": "cares"},
-            validator=validator_raise,
+            yaml_file=None, _user_config={"who": "cares"}, validator=validator_raise
         )
 
 
 # Testing the subset_check function
+
 
 def test_subset_check_it_is_subset():
     rv = subset_check(subset={"hello"}, set_={"hello", "world"})
