@@ -187,6 +187,7 @@ settings:
   output_file:
   show_matches: Yes
   delimiter:
+  ignore_columns: [1, 5, 6]
 ```
 - **bulk**
     - This setting is accessible via CLI arguments `-b` or `--bulk`.
@@ -264,6 +265,12 @@ settings:
     $ txtferret scan -d , ../fake_ccn_CSV_file.csv
     2019:05:20-01:12:18:-0400 PASSED sanity and matched regex - Filter: fake_ccn_account_filter, Line 1, String: 10XXXXXXXXXXXXXXXXXXX, Column: 3
     ```
+ - **ignore_columns**
+    - This setting is ignored if the `delimiter` setting or switch is not set.
+    - Add a list of integers and txtferret will skip those columns.
+    - If `ignore_columns: [2, 6]` is configured and a csv row is `hello,world,how,are,you,doing,today`, then
+    `world` and `doing` will not be scanned but will be ignored.
+    - This is particularly useful in columnar datasets when you know there is a column that is full of false positives.
 
 # How/why did this come about?
 
@@ -304,8 +311,8 @@ sanity check which can be paired with a DLP solution. Here are some things it wa
 ## Releases
 
 #### Version 0.1.0 - 2019-07-30
-- Removed the `config-override` option
-
+- Removed the `config-override` option.
+- Added `ignore_columns` setting.
 #### Version 0.0.4 - 2019-06-09
 - Added bulk file scanning by the `--bulk` switch.
 - Added multiprocessing for bulk scanning.

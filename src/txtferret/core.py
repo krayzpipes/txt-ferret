@@ -12,7 +12,7 @@ from ._sanity import sanity_check
 
 
 def tokenize(
-        clear_text, mask, index, tokenize=True, show_matches=False, tokenize_func=None,
+    clear_text, mask, index, tokenize=True, show_matches=False, tokenize_func=None
 ):
     """Return string as redacted, tokenized format, or clear text.
 
@@ -238,6 +238,7 @@ class TxtFerret:
                     value = {int(column) for column in value}
                     self.ignore_columns = value
 
+                    # Let the user know which columns are being ignored
                     print_string = ", ".join(
                         [str(col_num) for col_num in sorted(self.ignore_columns)]
                     )
@@ -246,8 +247,6 @@ class TxtFerret:
                     continue
                 # If it is None or empty, make it an empty set
                 self.ignore_columns = set()
-
-
 
             # If the current setting has no value, check to see if
             # the object already has an attribute of the same name.
@@ -319,7 +318,6 @@ class TxtFerret:
 
         logger.info(f"Finished scan for {self.file_name}")
 
-
     def _scan_delimited_line(self, line, index):
         """Scan a delimited line.
 
@@ -335,7 +333,7 @@ class TxtFerret:
             if not self.gzip:
                 columns = line.split(delimiter)
             else:
-                columns = line.split(delimiter.encode('utf-8'))
+                columns = line.split(delimiter.encode("utf-8"))
 
             column_map = get_column_map(
                 columns=columns, filter_=filter_, ignore_columns=self.ignore_columns
@@ -438,7 +436,6 @@ def get_column_map(columns=None, filter_=None, ignore_columns=None):
             column_map[j].append(match)
 
     return column_map
-
 
 
 def sanity_test(filter_, text, sanity_func=None):
