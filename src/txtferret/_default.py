@@ -13,6 +13,7 @@ settings:
   output_file:
   show_matches: Yes
   delimiter:
+  ignore_columns:
 
 filters:
   - label: american_express_15_ccn

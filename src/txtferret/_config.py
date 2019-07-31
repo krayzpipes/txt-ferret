@@ -25,6 +25,7 @@ _allowed_settings_keys = {
     "output_file",
     "show_matches",
     "delimiter",
+    "ignore_columns",
 }
 
 
