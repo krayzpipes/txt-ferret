@@ -19,10 +19,10 @@ def luhn(account_string):
     """
 
     # TODO - Is there a more effecient way to do this?
-    if not isinstance(account_string, str):
-        account_string = account_string.decode("utf-8")
+    # if not isinstance(account_string, str):
+    #     account_string = account_string.decode("utf-8")
 
-    no_special_chars = re.sub("[\W_]", "", account_string)
+    # no_special_chars = re.sub("[\W_]", "", account_string)
 
     try:
         # doubled_tuple:
@@ -30,8 +30,8 @@ def luhn(account_string):
         # difference of the index doubled and 9. This is required
         # as part of the luhn calculations.
         doubled_tuple = (0, 2, 4, 6, 8, 1, 3, 5, 7, 9)
-        evens = sum(int(even_num) for even_num in no_special_chars[-1::-2])
-        odds = sum(doubled_tuple[int(odd_num)] for odd_num in no_special_chars[-2::-2])
+        evens = sum(int(even_num) for even_num in account_string[-1::-2])
+        odds = sum(doubled_tuple[int(odd_num)] for odd_num in account_string[-2::-2])
     except ValueError:
         raise ValueError("Luhn algorithm input must convert to int.")
     else:

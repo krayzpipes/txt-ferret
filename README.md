@@ -141,6 +141,7 @@ as it is logged to a file or displayed on a terminal.
 filters:
 - label: american_express_15_ccn
   pattern: '((?:34|37)\d{2}(?:(?:[\W_]\d{6}[\W_]\d{5})|\d{11}))'
+  substitute: '[\W_]'
   sanity: luhn
   tokenize:
     index: 2,
@@ -162,6 +163,10 @@ filters:
         group as defined by starting the capture group with `?:`.
     - __Note: If you run into issues with loading a custom filter, try adding
     single-quotes around your regular expression.__
+- **Substitute:**
+    - Allows you to define what characters are removed from a string before it is passed to the sanity check(s).
+    - Must be a valid regular expression.
+    - If missing or empty, the default substitute is `[\W_]`.
 - **Sanity:**
     - This is the algorithm to use with this filter in order to validate the data is really what you're
     looking for. For example, 16 digits might just be a random number and not a credit card. Putting the
@@ -310,6 +315,8 @@ sanity check which can be paired with a DLP solution. Here are some things it wa
 
 ## Releases
 
+#### Version 0.1.1 - 2019-07-30
+- Added `substitute` option to filters.
 #### Version 0.1.0 - 2019-07-30
 - Removed the `config-override` option.
 - Added `ignore_columns` setting.

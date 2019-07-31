@@ -9,7 +9,7 @@ from ._default import default_yaml
 _allowed_top_level = {"filters", "settings"}
 
 # Keys allowed for a filter in the config YAML file.
-_allowed_filter_keys = {"label", "type", "pattern", "tokenize", "sanity"}
+_allowed_filter_keys = {"label", "type", "pattern", "tokenize", "sanity", "substitute"}
 
 # Keys allowed for the filter.tokenize values.
 _allowed_token_keys = {"mask", "index"}

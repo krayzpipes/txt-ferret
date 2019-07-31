@@ -9,6 +9,7 @@ from loguru import logger
 
 from ._config import _allowed_settings_keys
 from ._sanity import sanity_check
+from ._default import default_substitute
 
 
 def tokenize(
@@ -107,6 +108,8 @@ class Filter:
     :attribute label: The name of the filter in question.
     :attribute pattern: The regular expression that will be used to
         match text.
+    :attribute substitute: The regular expression used to replace
+        characters within the matched string (like a delimiter).
     :attribute type: A classification of the filter.
     :attribute sanity: The name of the sanity check (ex: 'luhn').
     :attribute token_mask: Mask used to mask filter results.
@@ -130,6 +133,14 @@ class Filter:
         except KeyError:
             raise ValueError("Pattern missing from filter.")
 
+        try:
+            self.substitute = filter_dict["substitute"]
+        except KeyError:
+            self.substitute = default_substitute
+        else:
+            if not self.substitute:
+                self.substitute = default_substitute
+
         self.type = filter_dict.get("type", "NOT_DEFINED")
         self.sanity = filter_dict.get("sanity", "")
 
@@ -152,6 +163,7 @@ class Filter:
         if gzip:
             self.token_mask = self.token_mask.encode("utf-8")
             self.pattern = self.pattern.encode("utf-8")
+            self.substitute = self.substitute.encode("utf-8")
 
         try:
             self.token_index = int(filter_dict["tokenize"].get("index", 0))
@@ -438,11 +450,13 @@ def get_column_map(columns=None, filter_=None, ignore_columns=None):
     return column_map
 
 
-def sanity_test(filter_, text, sanity_func=None):
+def sanity_test(filter_, text, sub=True, sanity_func=None):
     """Return bool depending on if text passes the sanity check.
 
     :param filter_: Filter object.
     :param text: The text being tested by the sanity check.
+    :param sub: For future use, can be used to skip the substitution
+        portion before passing text to sanity checks.
     :sanity_func: Used for tests.
 
     :return: True or False - Depending on if sanity check passed
@@ -450,8 +464,14 @@ def sanity_test(filter_, text, sanity_func=None):
     """
     _sanity_checker = sanity_func or sanity_check
 
+    if sub:
+        _text = re.sub(filter_.substitute, "", text)
+    else:
+        _text = text
+
     for algorithm_name in filter_.sanity:
-        if not _sanity_checker(algorithm_name, text):
+
+        if not _sanity_checker(algorithm_name, _text):
             return False
     return True
 

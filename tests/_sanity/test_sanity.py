@@ -38,17 +38,6 @@ def test_luhn_with_failing_account_num(bad_luhn_fake_account_num):
     assert isinstance(rv, bool), "Return value should be a bool"
 
 
-def test_luhn_with_passing_account_num_and_delims(good_luhn_fake_account_num_delims):
-    rv = luhn(good_luhn_fake_account_num_delims)
-    assert  rv == True, "Should have returned True"
-    assert isinstance(rv, bool), "Return value should be a bool"
-
-def test_luhn_with_failing_account_num_and_delims(bad_luhn_fake_account_num_delims):
-    rv = luhn(bad_luhn_fake_account_num_delims)
-    assert  rv == False, "Should have returned False"
-    assert isinstance(rv, bool), "Return value should be a bool"
-
-
 def test_luhn_for_value_error():
     non_int = "123abc"
     with pytest.raises(ValueError) as e_info:
@@ -78,6 +67,9 @@ def always_false_algorithm_stub():
         return False
 
     return stub_func
+
+
+# TODO Add tests for if substitution is set to False in sanity_check
 
 
 def test_sanity_check_passes_sanity(always_true_algorithm_stub):
