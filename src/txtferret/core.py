@@ -12,7 +12,7 @@ from ._sanity import sanity_check
 
 
 def tokenize(
-        clear_text, mask, index, tokenize=True, show_matches=False, tokenize_func=None,
+    clear_text, mask, index, tokenize=True, show_matches=False, tokenize_func=None
 ):
     """Return string as redacted, tokenized format, or clear text.
 
@@ -230,6 +230,24 @@ class TxtFerret:
             if setting not in _allowed_settings_keys:
                 continue
 
+            # ignore_columns will not be a switch, so we want to go
+            # ahead and handle it here instead of trying to determine
+            # if it's a cli_argument further down.
+            if setting == "ignore_columns":
+                if value is not None and value:
+                    value = {int(column) for column in value}
+                    self.ignore_columns = value
+
+                    # Let the user know which columns are being ignored
+                    print_string = ", ".join(
+                        [str(col_num) for col_num in sorted(self.ignore_columns)]
+                    )
+                    logger.info(f"Columns set to be ignored: {print_string}")
+
+                    continue
+                # If it is None or empty, make it an empty set
+                self.ignore_columns = set()
+
             # If the current setting has no value, check to see if
             # the object already has an attribute of the same name.
             # If it does not, then we assume this is the original
@@ -307,7 +325,6 @@ class TxtFerret:
         :param index: The line number.
         """
         for filter_ in self.filters:
-            column_map = {}
 
             # Make sure to convert to bytecode/hex if necessary.
             # For example... Start Of Header (SOH).
@@ -316,22 +333,11 @@ class TxtFerret:
             if not self.gzip:
                 columns = line.split(delimiter)
             else:
-                columns = line.split(delimiter.encode('utf-8'))
+                columns = line.split(delimiter.encode("utf-8"))
 
-            # Look for matches in each column.
-            for i, column in enumerate(columns):
-                matches = filter_.regex.findall(column)
-
-                if not matches:
-                    continue
-
-                # Fill out column_map
-                for match in matches:
-                    j = str(i)
-                    if j not in column_map:
-                        column_map[j] = []
-
-                    column_map[j].append(match)
+            column_map = get_column_map(
+                columns=columns, filter_=filter_, ignore_columns=self.ignore_columns
+            )
 
             for column_number, column_match_list in column_map.items():
                 for column_match in column_match_list:
@@ -394,6 +400,42 @@ class TxtFerret:
 
                 if not self.summarize:
                     log_success(self.file_name, filter_, index, string_to_log)
+
+
+# TODO get_column_map needs tests.
+def get_column_map(columns=None, filter_=None, ignore_columns=None):
+    """ Return a dict containing columns and their regex matches
+
+    :param columns: List of the columns to scan
+    :param filter_: The filter object that contains the regular
+        expression to use when scanning the column.
+    :ignore_columns: A set containing column numbers which should be
+        ignored and not scanned.
+    """
+
+    column_map = {}
+
+    for i, column in enumerate(columns):
+
+        # Skip this column if the config says to ignore it.
+        if (i + 1) in ignore_columns:
+            continue
+
+        matches = filter_.regex.findall(column)
+
+        if not matches:
+            continue
+
+        # Fill out the column_map with {"index": "match"}
+        for match in matches:
+            j = str(i)
+            # In case there are multiple matches in a column.
+            if j not in column_map:
+                column_map[j] = []
+
+            column_map[j].append(match)
+
+    return column_map
 
 
 def sanity_test(filter_, text, sanity_func=None):
