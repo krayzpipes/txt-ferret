@@ -109,6 +109,7 @@ def test_sanity_for_failed_sanity_check():
 
     class StubFilter:
         sanity = ["fake"]
+        substitute = "who_cares"
 
     assert sanity_test(StubFilter, "some_text", sanity_func=stub_func) == False
 
@@ -120,5 +121,6 @@ def test_sanity_for_passed_sanity_checks():
 
     class StubFilter:
         sanity = ["sanity1", "sanity2", "sanity3"]
+        substitute = "who_cares"
 
     assert sanity_test(StubFilter, "some_text", sanity_func=stub_func)
