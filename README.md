@@ -315,6 +315,8 @@ sanity check which can be paired with a DLP solution. Here are some things it wa
 
 ## Releases
 
+#### Version 0.1.2 - 2019-08-01
+- Fixed bug with regex when reading gzipped files.
 #### Version 0.1.1 - 2019-07-30
 - Added `substitute` option to filters.
 #### Version 0.1.0 - 2019-07-30

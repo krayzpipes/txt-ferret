@@ -143,6 +143,7 @@ class Filter:
 
         self.type = filter_dict.get("type", "NOT_DEFINED")
         self.sanity = filter_dict.get("sanity", "")
+        self.empty = ""  # Used in re.sub in 'sanity_check'
 
         # Sanity should be a list of strings. If just a string, convert
         # it to a list with a single element.
@@ -164,6 +165,7 @@ class Filter:
             self.token_mask = self.token_mask.encode("utf-8")
             self.pattern = self.pattern.encode("utf-8")
             self.substitute = self.substitute.encode("utf-8")
+            self.empty = b""  # Used in re.sub in 'sanity_check'
 
         try:
             self.token_index = int(filter_dict["tokenize"].get("index", 0))
@@ -465,7 +467,7 @@ def sanity_test(filter_, text, sub=True, sanity_func=None):
     _sanity_checker = sanity_func or sanity_check
 
     if sub:
-        _text = re.sub(filter_.substitute, "", text)
+        _text = re.sub(filter_.substitute, filter_.empty, text)
     else:
         _text = text
 

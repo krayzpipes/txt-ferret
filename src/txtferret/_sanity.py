@@ -19,8 +19,8 @@ def luhn(account_string):
     """
 
     # TODO - Is there a more effecient way to do this?
-    # if not isinstance(account_string, str):
-    #     account_string = account_string.decode("utf-8")
+    if not isinstance(account_string, str):
+        account_string = account_string.decode("utf-8")
 
     # no_special_chars = re.sub("[\W_]", "", account_string)
 
@@ -34,6 +34,9 @@ def luhn(account_string):
         odds = sum(doubled_tuple[int(odd_num)] for odd_num in account_string[-2::-2])
     except ValueError:
         raise ValueError("Luhn algorithm input must convert to int.")
+    except Exception:
+        print(account_string)
+        raise
     else:
         return (evens + odds) % 10 == 0
 
