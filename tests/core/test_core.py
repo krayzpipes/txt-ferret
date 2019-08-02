@@ -12,12 +12,9 @@ from txtferret.core import (
 
 
 def test_gzipped_file_check_return_true():
-
     @contextmanager
     def opener_stub_raise_error(x, y):
-
         class FileHandlerStub:
-
             @staticmethod
             def readline():
                 raise UnicodeDecodeError("fake", b"o", 1, 2, "fake")
@@ -28,12 +25,9 @@ def test_gzipped_file_check_return_true():
 
 
 def test_gzipped_file_check_return_false():
-
     @contextmanager
     def opener_stub_no_error(x, y):
-
         class FileHandlerStub:
-
             @staticmethod
             def readline():
                 return ""
@@ -54,20 +48,22 @@ def test_tokenize_return_clear_text():
 
 
 def test_tokenize_runs_tokenization_function():
-
     def stub_func(arg1, arg2, arg3):
         return "stub was called"
 
-    assert tokenize("hello", "XXX", 0, show_matches=True, tokenize_func=stub_func)\
-           == "stub was called"
+    assert (
+        tokenize("hello", "XXX", 0, show_matches=True, tokenize_func=stub_func)
+        == "stub was called"
+    )
 
 
 def test_tokenize_for_byte_return():
     def stub_func(arg1, arg2, arg3):
         return (arg1, arg2, arg3)
 
-    assert tokenize(b"hello", b"XXX", 0, show_matches=True, tokenize_func=stub_func)\
-           == ("hello", "XXX", 0)
+    assert tokenize(
+        b"hello", b"XXX", 0, show_matches=True, tokenize_func=stub_func
+    ) == ("hello", "XXX", 0)
 
 
 def test_get_tokenized_string_normal():
@@ -103,24 +99,24 @@ def test_byte_code_to_string_start_of_header():
 
 
 def test_sanity_for_failed_sanity_check():
-
     def stub_func(a, b):
         return False
 
     class StubFilter:
         sanity = ["fake"]
         substitute = "who_cares"
+        empty = ""
 
     assert sanity_test(StubFilter, "some_text", sanity_func=stub_func) == False
 
 
 def test_sanity_for_passed_sanity_checks():
-
     def stub_func(a, b):
         return True
 
     class StubFilter:
         sanity = ["sanity1", "sanity2", "sanity3"]
         substitute = "who_cares"
+        empty = ""
 
     assert sanity_test(StubFilter, "some_text", sanity_func=stub_func)
