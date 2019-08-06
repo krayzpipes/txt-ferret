@@ -11,7 +11,7 @@ stages:
 flake8:
   stage: Static Analysis
   script:
-  - flake8 --max-line-length=88 src/*.py
+  - flake8 --max-line-length=88 --exclude src/txtferret/_default.py src/*
 
 pytest:
   stage: Test
