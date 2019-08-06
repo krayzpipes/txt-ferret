@@ -1,5 +1,6 @@
 """Module to hold sanity check functions."""
 
+
 def luhn(account_string, _encoding):
     """Return bool if string passes Luhn test.
 
