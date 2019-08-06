@@ -2,14 +2,22 @@ import os
 
 import yaml
 
-from ._default import default_yaml
+from ._default import DEFAULT_YAML
 
 
 # Keys allowed in top lovel of config.
 _allowed_top_level = {"filters", "settings"}
 
 # Keys allowed for a filter in the config YAML file.
-_allowed_filter_keys = {"label", "type", "pattern", "tokenize", "sanity", "substitute"}
+_allowed_filter_keys = {
+    "label",
+    "type",
+    "pattern",
+    "tokenize",
+    "sanity",
+    "substitute",
+    "encoding",
+}
 
 # Keys allowed for the filter.tokenize values.
 _allowed_token_keys = {"mask", "index"}
@@ -26,6 +34,7 @@ _allowed_settings_keys = {
     "show_matches",
     "delimiter",
     "ignore_columns",
+    "file_encoding",
 }
 
 
@@ -43,7 +52,7 @@ def _load_default_config(config_string=None):
 
     :return: dict containing default config YAML file content.
     """
-    default_yaml_config = config_string or default_yaml
+    default_yaml_config = config_string or DEFAULT_YAML
     return yaml.safe_load(default_yaml_config)
 
 

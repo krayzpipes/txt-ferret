@@ -16,8 +16,8 @@ def test_gzipped_file_check_return_true():
     def opener_stub_raise_error(x, y):
         class FileHandlerStub:
             @staticmethod
-            def readline():
-                raise UnicodeDecodeError("fake", b"o", 1, 2, "fake")
+            def read(not_used):
+                return b'\x1f\x8b'
 
         yield FileHandlerStub()
 
@@ -29,8 +29,8 @@ def test_gzipped_file_check_return_false():
     def opener_stub_no_error(x, y):
         class FileHandlerStub:
             @staticmethod
-            def readline():
-                return ""
+            def read(not_used):
+                return b'NOPE'
 
         yield FileHandlerStub()
 
@@ -86,20 +86,20 @@ def test_get_tokenized_string_mask_too_long():
 
 def test_byte_code_to_string_no_byte_string():
 
-    fake_byte_code = "bhello"
+    fake_byte_code = b'bhello'
 
-    assert _byte_code_to_string(fake_byte_code) == fake_byte_code
+    assert _byte_code_to_string(fake_byte_code, _encoding="utf-8") == fake_byte_code
 
 
 def test_byte_code_to_string_start_of_header():
 
-    byte_code = "b1"
+    byte_code = b'b1'
 
-    assert _byte_code_to_string(byte_code) == "\x01"
+    assert _byte_code_to_string(byte_code, _encoding="utf-8") == b'\x01'
 
 
 def test_sanity_for_failed_sanity_check():
-    def stub_func(a, b):
+    def stub_func(a, b, encoding):
         return False
 
     class StubFilter:
@@ -111,7 +111,7 @@ def test_sanity_for_failed_sanity_check():
 
 
 def test_sanity_for_passed_sanity_checks():
-    def stub_func(a, b):
+    def stub_func(a, b, encoding):
         return True
 
     class StubFilter:
