@@ -16,4 +16,4 @@ flake8:
 pytest:
   stage: Test
   script:
-    - pylint tests/
+    - pytest tests/
