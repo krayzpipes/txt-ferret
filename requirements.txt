@@ -13,6 +13,8 @@ chardet==3.0.4
 Click==7.0
 colorama==0.4.1
 docutils==0.14
+entrypoints==0.3
+flake8==3.7.8
 idna==2.8
 isort==4.3.20
 jmespath==0.9.4
@@ -23,6 +25,8 @@ more-itertools==7.0.0
 pkginfo==1.5.0.1
 pluggy==0.11.0
 py==1.8.0
+pycodestyle==2.5.0
+pyflakes==2.1.1
 Pygments==2.3.1
 pylint==2.3.1
 pytest==4.5.0
