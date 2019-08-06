@@ -80,7 +80,7 @@ def _byte_code_to_string(byte_code, _encoding):
 
     :return: UTF-8 version of byte-code.
     """
-    match = re.match(b"b(\d{1,3})", byte_code)
+    match = re.match(b"b([0-9]{1,3})", byte_code)
     if not match:
         return byte_code
     code_ = int(match.group(1))
