@@ -28,7 +28,6 @@ filters:
     sanity: luhn
     pattern: '((?:34|37)\d{2}(?:(?:[\W_]\d{6}[\W_]\d{5})|\d{11}))'
     substitute: '[\W_]'
-    encoding: 'utf-8'
     tokenize:
       mask: XXXXXXXXXXXXX
       index: 2
@@ -37,7 +36,6 @@ filters:
     sanity: luhn
     pattern: '(4\d{3}(?:(?:[\W_]\d{4}){3}|\d{12}))'
     substitute: '[\W_]'
-    encoding: 'utf-8'
     tokenize:
       mask: XXXXXXXXXXXXXXX
       index: 1
@@ -46,7 +44,6 @@ filters:
     sanity: luhn
     pattern: '(5[1-5]\d{2}(?:(?:[\W_]\d{4}){3}|\d{12}))'
     substitute: '[\W_]'
-    encoding: 'utf-8'
     tokenize:
       mask: XXXXXXXXXXXXXX
       index: 2
@@ -55,7 +52,6 @@ filters:
     sanity: luhn
     pattern: '(6011(?:(?:[\W_]\d{4}){3}|\d{12}))'
     substitute: '[\W_]'
-    encoding: 'utf-8'
     tokenize:
       mask: XXXXXXXXXXXX
       index: 4
@@ -64,7 +60,6 @@ filters:
     sanity: luhn
     pattern: '((?:30[0-5]\d|3[68]\d{2})(?:(?:[\W_]\d{6}[\W_]\d{4})|\d{10}))'
     substitute: '[\W_]'
-    encoding: 'utf-8'
     tokenize:
       mask: XXXXXXXXXXXX
       index: 2
