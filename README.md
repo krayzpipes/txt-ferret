@@ -193,6 +193,7 @@ settings:
   show_matches: Yes
   delimiter:
   ignore_columns: [1, 5, 6]
+  file_encoding: 'utf-8'
 ```
 - **bulk**
     - This setting is accessible via CLI arguments `-b` or `--bulk`.
@@ -276,7 +277,11 @@ settings:
     - If `ignore_columns: [2, 6]` is configured and a csv row is `hello,world,how,are,you,doing,today`, then
     `world` and `doing` will not be scanned but will be ignored.
     - This is particularly useful in columnar datasets when you know there is a column that is full of false positives.
-
+ - **file_encoding**
+    - Two uses:
+        - Used to encode your `delimiter` value to the appropriate encoding of your file.
+        - Used to encode the data matched in the file before being applied to sanity check.
+    - Default value is `'utf-8'`
 # How/why did this come about?
 
 There are a few shortcomings with commercial Data Loss Prevention (DLP) products:
@@ -315,6 +320,9 @@ sanity check which can be paired with a DLP solution. Here are some things it wa
 
 ## Releases
 
+#### Version 0.1.3 - 2019-08-05
+- Added `file_encoding` setting for multi-encoding support.
+    - Reads in bytes and assumes `'utf-8'` encoding by default.
 #### Version 0.1.2 - 2019-08-01
 - Fixed bug with regex when reading gzipped files.
 #### Version 0.1.1 - 2019-07-30

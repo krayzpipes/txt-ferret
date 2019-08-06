@@ -9,11 +9,22 @@ from loguru import logger
 
 from ._config import _allowed_settings_keys
 from ._sanity import sanity_check
-from ._default import default_substitute
+from ._default import (
+    DEFAULT_SUBSTITUTE,
+    DEFAULT_ENCODING,
+    DEFAULT_TOKEN_INDEX,
+    DEFAULT_TOKEN_MASK,
+)
 
 
 def tokenize(
-    clear_text, mask, index, tokenize=True, show_matches=False, tokenize_func=None
+    clear_text,
+    mask,
+    index,
+    tokenize=True,
+    show_matches=False,
+    encoding_=DEFAULT_ENCODING,
+    tokenize_func=None,
 ):
     """Return string as redacted, tokenized format, or clear text.
 
@@ -25,23 +36,22 @@ def tokenize(
         tokenized or not.
     :param show_matches: Bool representing whether the clear text should
         be redacted all together or not.
+    :param encoding_: Encoding of the text which will be tokenized.
     """
 
     if not show_matches:
         return "REDACTED"
-
-    # byte string can be present if source file is Gzipped
-    # convert to utf-8 string for logging/file output.
-    if not isinstance(clear_text, str):
-        clear_text = clear_text.decode("utf-8")
-        mask = mask.decode("utf-8")
 
     if not tokenize:
         return clear_text
 
     tokenize_function = tokenize_func or _get_tokenized_string
 
-    return tokenize_function(clear_text, mask, index)
+    # Convert to str so we can use it like a list with indexes natively.
+    clear_text = clear_text.decode(encoding_)
+    mask = mask.decode(encoding_)
+
+    return tokenize_function(clear_text, mask, index).encode(encoding_)
 
 
 def _get_tokenized_string(text, mask, index):
@@ -60,7 +70,7 @@ def _get_tokenized_string(text, mask, index):
     return f"{text[:index]}{mask}{text[end_index:]}"
 
 
-def _byte_code_to_string(byte_code):
+def _byte_code_to_string(byte_code, _encoding):
     """Return the UTF-8 form of a byte code.
 
     :param byte_code: String that may contain a string that matches the
@@ -70,35 +80,37 @@ def _byte_code_to_string(byte_code):
 
     :return: UTF-8 version of byte-code.
     """
-    match = re.match("b(\d{1,3})", byte_code)
+    match = re.match(b"b(\d{1,3})", byte_code)
     if not match:
         return byte_code
     code_ = int(match.group(1))
-    return bytes((code_,)).decode("utf-8")
+    return bytes((code_,))
 
 
 def gzipped_file_check(file_to_scan, _opener=None):
-    """ Return bool based on if opening file returns UnicodeDecodeError
+    """ Return bool based on if opening file having first two
+    gzip chars.
 
-    If UnicodeDecodeError is returned when trying to read a line of the
-    file, then we will assume this is a gzipped file.
+    If the first two bytes are \x1f\x8b, then it is a gzip file.
 
     :param file_to_scan: String containing file path/name to read.
     :param _opener: Used to pass file handler stub for testing.
 
-    :return: True if UnicodeDecodeError is detected. False if not.
+    :return: True if first two bytes match first two bytes of gzip file.
     """
 
     # Use test stub or the normal 'open'
     _open = _opener or open
 
-    try:
-        with _open(file_to_scan, "r") as rf:
-            _ = rf.readline()
-    except UnicodeDecodeError:
+    # Read first two bytes
+    with _open(file_to_scan, "rb") as rf:
+        first_two_bytes = rf.read(2)
+
+    gzip_bytes = b"\x1f\x8b"
+
+    if first_two_bytes == gzip_bytes:
         return True
-    else:
-        return False
+    return False
 
 
 class Filter:
@@ -117,7 +129,7 @@ class Filter:
         mask should start being applied.
     """
 
-    def __init__(self, filter_dict, gzip):
+    def __init__(self, filter_dict, gzip, _encoding=DEFAULT_ENCODING):
         """Initialize the Filter object. Lots handling input from
         the config file here.
 
@@ -136,10 +148,10 @@ class Filter:
         try:
             self.substitute = filter_dict["substitute"]
         except KeyError:
-            self.substitute = default_substitute
+            self.substitute = DEFAULT_SUBSTITUTE
         else:
-            if not self.substitute:
-                self.substitute = default_substitute
+            if not self.substitute or self.substitute is None:
+                self.substitute = DEFAULT_SUBSTITUTE
 
         self.type = filter_dict.get("type", "NOT_DEFINED")
         self.sanity = filter_dict.get("sanity", "")
@@ -151,21 +163,19 @@ class Filter:
             self.sanity = [self.sanity]
 
         try:
-            self.token_mask = filter_dict["tokenize"].get("mask", "XXXXXXXXXXXXXXX")
+            self.token_mask = filter_dict["tokenize"].get("mask", DEFAULT_TOKEN_MASK)
         except KeyError:
-            self.token_mask = "XXXXXXXXXXXXXXX"  # move this to the default
-            self.token_index = 0
+            self.token_mask = DEFAULT_TOKEN_MASK  # move this to the default
+            self.token_index = DEFAULT_TOKEN_INDEX
             logger.info(
                 f"Filter did not have tokenize section. Reverting to "
                 f"default tokenization mask and index."
             )
 
-        # If gzip, we need to use byte strings instead of utf-8
-        if gzip:
-            self.token_mask = self.token_mask.encode("utf-8")
-            self.pattern = self.pattern.encode("utf-8")
-            self.substitute = self.substitute.encode("utf-8")
-            self.empty = b""  # Used in re.sub in 'sanity_check'
+        self.token_mask = self.token_mask.encode(_encoding)
+        self.pattern = self.pattern.encode(_encoding)
+        self.substitute = self.substitute.encode(_encoding)
+        self.empty = b""  # Used in re.sub in 'sanity_check'
 
         try:
             self.token_index = int(filter_dict["tokenize"].get("index", 0))
@@ -187,7 +197,7 @@ class TxtFerret:
         output of strings that match and pass sanity checks.
     :attribute log_level: Log level to be used by logouru.logger.
     :attribute summarize: If True, only outputs summary of the scan
-        resutls.
+        results.
     :attribute output_file: File to write results to.
     :attribute show_matches: Show or redact matched strings.
     :attribute delimiter: String representing the delimiter for
@@ -218,6 +228,12 @@ class TxtFerret:
 
         # Override settings from file with CLI arguments if present.
         self.set_attributes(**cli_settings)
+
+        if getattr(self, "file_encoding", None) is None:
+            self.file_encoding = DEFAULT_ENCODING
+
+        if self.delimiter:
+            self.delimiter = self.delimiter.encode(self.file_encoding)
 
         # Counters
         self.failed_sanity = 0
@@ -313,7 +329,7 @@ class TxtFerret:
         else:
             _open = gzip.open
 
-        with _open(file_to_scan, "r") as rf:
+        with _open(file_to_scan, "rb") as rf:
             for index, line in enumerate(rf):
 
                 # if isinstance(line, bytes):
@@ -342,12 +358,9 @@ class TxtFerret:
 
             # Make sure to convert to bytecode/hex if necessary.
             # For example... Start Of Header (SOH).
-            delimiter = _byte_code_to_string(self.delimiter)
+            delimiter = _byte_code_to_string(self.delimiter, self.file_encoding)
 
-            if not self.gzip:
-                columns = line.split(delimiter)
-            else:
-                columns = line.split(delimiter.encode("utf-8"))
+            columns = line.split(delimiter)
 
             column_map = get_column_map(
                 columns=columns, filter_=filter_, ignore_columns=self.ignore_columns
@@ -356,7 +369,9 @@ class TxtFerret:
             for column_number, column_match_list in column_map.items():
                 for column_match in column_match_list:
 
-                    if not sanity_test(filter_, column_match):
+                    if not sanity_test(
+                        filter_, column_match, encoding=self.file_encoding
+                    ):
                         self.failed_sanity += 1
 
                         if not self.summarize:
@@ -366,13 +381,16 @@ class TxtFerret:
 
                     self.passed_sanity += 1
 
-                    string_to_log = tokenize(
+                    _string_to_log = tokenize(
                         column_match,
                         filter_.token_mask,
                         filter_.token_index,
                         tokenize=self.tokenize,
+                        encoding_=self.file_encoding,
                         show_matches=self.show_matches,
                     )
+                    # Print a str instead of byte-string
+                    string_to_log = _string_to_log.decode(self.file_encoding)
 
                     if not self.summarize:
                         log_success(
@@ -404,13 +422,17 @@ class TxtFerret:
 
                 self.passed_sanity += 1
 
-                string_to_log = tokenize(
+                _string_to_log = tokenize(
                     match,
                     filter_.token_mask,
                     filter_.token_index,
                     tokenize=self.tokenize,
+                    encoding_=self.file_encoding,
                     show_matches=self.show_matches,
                 )
+
+                # Print a str instead of byte-string
+                string_to_log = _string_to_log.decode(self.file_encoding)
 
                 if not self.summarize:
                     log_success(self.file_name, filter_, index, string_to_log)
@@ -452,13 +474,14 @@ def get_column_map(columns=None, filter_=None, ignore_columns=None):
     return column_map
 
 
-def sanity_test(filter_, text, sub=True, sanity_func=None):
+def sanity_test(filter_, text, sub=True, encoding=DEFAULT_ENCODING, sanity_func=None):
     """Return bool depending on if text passes the sanity check.
 
     :param filter_: Filter object.
     :param text: The text being tested by the sanity check.
     :param sub: For future use, can be used to skip the substitution
         portion before passing text to sanity checks.
+    :param encoding: Encoding of the text that will be checked.
     :sanity_func: Used for tests.
 
     :return: True or False - Depending on if sanity check passed
@@ -473,7 +496,7 @@ def sanity_test(filter_, text, sub=True, sanity_func=None):
 
     for algorithm_name in filter_.sanity:
 
-        if not _sanity_checker(algorithm_name, _text):
+        if not _sanity_checker(algorithm_name, _text, encoding=encoding):
             return False
     return True
 

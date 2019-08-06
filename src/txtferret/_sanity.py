@@ -1,7 +1,7 @@
 import re
 
 
-def luhn(account_string):
+def luhn(account_string, _encoding):
     """Return bool if string passes Luhn test.
 
     This is based on the algorithm example found on the wikipedia
@@ -11,6 +11,7 @@ def luhn(account_string):
 
     :param account_string: The string of digits to be tested by the
         luhn algorithm.
+    :param encoding: Encoding of the string to be tested.
 
     :raises ValueError: Input couldn't be converted to int type.
 
@@ -20,7 +21,7 @@ def luhn(account_string):
 
     # TODO - Is there a more effecient way to do this?
     if not isinstance(account_string, str):
-        account_string = account_string.decode("utf-8")
+        account_string = account_string.decode(_encoding)
 
     # no_special_chars = re.sub("[\W_]", "", account_string)
 
@@ -46,12 +47,13 @@ def luhn(account_string):
 sanity_mapping = {"luhn": luhn}
 
 
-def sanity_check(sanity_check_name, data, sanity_map=None):
+def sanity_check(sanity_check_name, data, encoding=None, sanity_map=None):
     """Return bool representing whether the sanity check passed or not.
 
     :param sanity_check_name: Name of the sanity check to be
         performed. (Ex: 'luhn')
     :param data: Data to be validated by the sanity check.
+    :param encoding: Encoding of the data to be tested.
     :param sanity_map: Map of sanity checks. Mostly here for tests.
 
     :raises ValueError: Sanity check does not exist.
@@ -64,4 +66,4 @@ def sanity_check(sanity_check_name, data, sanity_map=None):
     except KeyError:
         raise ValueError(f"Sanity algorithm {sanity_check_name} does not exist.")
     else:
-        return _sanity_algorithm(data)
+        return _sanity_algorithm(data, encoding)

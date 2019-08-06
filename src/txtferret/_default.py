@@ -1,4 +1,3 @@
-
 """Default YAML config.
 
 IF YOU WILL BE CHANGING THIS CONFIG FILE, be sure that you update the
@@ -6,10 +5,13 @@ validation functions and tests for _config.py.
 """
 
 
-default_substitute = "[\W_]"
+DEFAULT_SUBSTITUTE = "[\W_]"
+DEFAULT_ENCODING = "utf-8"
+DEFAULT_TOKEN_MASK = "XXXXXXXXXXXXXXX"
+DEFAULT_TOKEN_INDEX = 0
 
 
-default_yaml = """
+DEFAULT_YAML = """
 settings:
   tokenize: Yes
   log_level: INFO
@@ -18,6 +20,7 @@ settings:
   show_matches: Yes
   delimiter:
   ignore_columns:
+  file_encoding: 'utf-8'
 
 filters:
   - label: american_express_15_ccn
