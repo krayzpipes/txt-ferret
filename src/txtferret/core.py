@@ -12,62 +12,62 @@ from ._sanity import sanity_check
 from ._default import (
     DEFAULT_SUBSTITUTE,
     DEFAULT_ENCODING,
-    DEFAULT_TOKEN_INDEX,
-    DEFAULT_TOKEN_MASK,
+    DEFAULT_MASK_INDEX,
+    DEFAULT_MASK_VALUE,
 )
 
 
-def tokenize(
+def mask(
     clear_text,
-    mask,
+    mask_value,
     index,
-    tokenize=True,
+    mask=False,
     show_matches=False,
     encoding_=DEFAULT_ENCODING,
-    tokenize_func=None,
+    mask_func=None,
 ):
-    """Return string as redacted, tokenized format, or clear text.
+    """Return string as redacted, masked format, or clear text.
 
-    :param clear_text: The text to be tokenized.
+    :param clear_text: The text to be masked.
     :param mask: The mask to be applied to the clear text.
     :param index: Which index in the clear_text string the mask should
         start at.
-    :param tokenize: Bool representing whether the clear text should be
-        tokenized or not.
+    :param mask: Bool representing whether the clear text should be
+        masked or not.
     :param show_matches: Bool representing whether the clear text should
         be redacted all together or not.
-    :param encoding_: Encoding of the text which will be tokenized.
+    :param encoding_: Encoding of the text which will be masked.
     """
 
     if not show_matches:
         return "REDACTED"
 
-    if not tokenize:
+    if not mask:
         return clear_text
 
-    tokenize_function = tokenize_func or _get_tokenized_string
+    mask_function = mask_func or _get_masked_string
 
     # Convert to str so we can use it like a list with indexes natively.
-    clear_text = clear_text.decode(encoding_)
-    mask = mask.decode(encoding_)
+    _clear_text = clear_text.decode(encoding_)
+    _mask_value = mask_value.decode(encoding_)
 
-    return tokenize_function(clear_text, mask, index).encode(encoding_)
+    return mask_function(_clear_text, _mask_value, index).encode(encoding_)
 
 
-def _get_tokenized_string(text, mask, index):
-    """Return tokenized string.
+def _get_masked_string(text, mask_value, index):
+    """Return masked string.
 
     :Note: If the mask length will cause the final string to be longer
         than the original string, then the mask will be cut down to
         size.
     """
 
-    end_index = index + len(mask)
+    end_index = index + len(mask_value)
     text_length = len(text)
     if (text_length - 1) < end_index:
-        temp_string = f"{text[:index]}{mask}"
+        temp_string = f"{text[:index]}{mask_value}"
         return temp_string[:text_length]
-    return f"{text[:index]}{mask}{text[end_index:]}"
+    return f"{text[:index]}{mask_value}{text[end_index:]}"
 
 
 def _byte_code_to_string(byte_code, _encoding):
@@ -124,8 +124,8 @@ class Filter:
         characters within the matched string (like a delimiter).
     :attribute type: A classification of the filter.
     :attribute sanity: The name of the sanity check (ex: 'luhn').
-    :attribute token_mask: Mask used to mask filter results.
-    :attribute token_index: Index in clear-text string in which the
+    :attribute mask_value: Mask used to mask filter results.
+    :attribute mask_index: Index in clear-text string in which the
         mask should start being applied.
     """
 
@@ -163,22 +163,22 @@ class Filter:
             self.sanity = [self.sanity]
 
         try:
-            self.token_mask = filter_dict["tokenize"].get("mask", DEFAULT_TOKEN_MASK)
+            self.mask_value = filter_dict["mask"].get("value", DEFAULT_MASK_VALUE)
         except KeyError:
-            self.token_mask = DEFAULT_TOKEN_MASK  # move this to the default
-            self.token_index = DEFAULT_TOKEN_INDEX
+            self.mask_value = DEFAULT_MASK_VALUE  # move this to the default
+            self.mask_index = DEFAULT_MASK_INDEX
             logger.info(
-                f"Filter did not have tokenize section. Reverting to "
-                f"default tokenization mask and index."
+                f"Filter did not have mask section. Reverting to "
+                f"default masking value and index."
             )
 
-        self.token_mask = self.token_mask.encode(_encoding)
+        self.mask_value = self.mask_value.encode(_encoding)
         self.pattern = self.pattern.encode(_encoding)
         self.substitute = self.substitute.encode(_encoding)
         self.empty = b""  # Used in re.sub in 'sanity_check'
 
         try:
-            self.token_index = int(filter_dict["tokenize"].get("index", 0))
+            self.mask_index = int(filter_dict["mask"].get("index", 0))
         except ValueError:
             raise ValueError(f"Token index for filter is not an integer.")
 
@@ -193,9 +193,9 @@ class TxtFerret:
 
     :attribute file_name: The name of the file to scan.
     :attribute gzip: Bool depicting if input file is gzipped
-    :attribute tokenize: Determines if txt_ferret will tokenize the
+    :attribute mask: Determines if txt_ferret will mask the
         output of strings that match and pass sanity checks.
-    :attribute log_level: Log level to be used by logouru.logger.
+    :attribute log_level: Log level to be used by loguru.logger.
     :attribute summarize: If True, only outputs summary of the scan
         results.
     :attribute output_file: File to write results to.
@@ -252,10 +252,11 @@ class TxtFerret:
         as the CLI arguments."""
         for setting, value in kwargs.items():
 
-            if setting == "no_tokenize":
-                if not value:
+            if setting == "mask":
+                if not value or value is None:
+                    self.mask = False
                     continue
-                self.tokenize = False
+                self.mask = True
 
             if setting not in _allowed_settings_keys:
                 continue
@@ -381,11 +382,11 @@ class TxtFerret:
 
                     self.passed_sanity += 1
 
-                    _string_to_log = tokenize(
+                    _string_to_log = mask(
                         column_match,
-                        filter_.token_mask,
-                        filter_.token_index,
-                        tokenize=self.tokenize,
+                        filter_.mask_value,
+                        filter_.mask_index,
+                        mask=self.mask,
                         encoding_=self.file_encoding,
                         show_matches=self.show_matches,
                     )
@@ -422,11 +423,11 @@ class TxtFerret:
 
                 self.passed_sanity += 1
 
-                _string_to_log = tokenize(
+                _string_to_log = mask(
                     match,
-                    filter_.token_mask,
-                    filter_.token_index,
-                    tokenize=self.tokenize,
+                    filter_.mask_value,
+                    filter_.mask_index,
+                    mask=self.mask,
                     encoding_=self.file_encoding,
                     show_matches=self.show_matches,
                 )

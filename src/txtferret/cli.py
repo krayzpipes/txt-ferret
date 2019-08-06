@@ -128,10 +128,10 @@ def cli():
 
 @click.command()
 @click.option(
-    "--no-tokenize",
-    "-nt",
+    "--mask",
+    "-m",
     is_flag=True,
-    help="When set, the output from the scan will not be tokenized.",
+    help="When set, the data found while scanning will be masked when output.",
 )
 @click.option(
     "--log-level",
