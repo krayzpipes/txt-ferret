@@ -18,6 +18,8 @@ pytest:
   script:
     - pwd
     - ls -l
+    - cd src
     - export PYTHONPATH="$PYTHONPATH:."
+    - cd ..
     - python -c "import sys;print(sys.path)"
     - pytest tests/
