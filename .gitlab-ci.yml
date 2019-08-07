@@ -13,6 +13,11 @@ flake8:
   script:
   - flake8 --max-line-length=88 --exclude src/txtferret/_default.py src/*
 
+bandit:
+  stage: Static Analysis
+  script:
+  - bandit -r src/*
+
 pytest:
   stage: Test
   script:
@@ -22,3 +27,4 @@ pytest:
     - echo $PYTHONPATH
     - python -c "import sys;print(sys.path)"
     - pytest tests/
+
