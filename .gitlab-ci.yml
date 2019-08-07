@@ -16,7 +16,7 @@ flake8:
 bandit:
   stage: Static Analysis
   script:
-  - bandit -r src/*
+  - bandit -r -x src/txtferret/_default.py src/*
 
 pytest:
   stage: Test
