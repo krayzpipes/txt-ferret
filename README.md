@@ -319,6 +319,8 @@ sanity check which can be paired with a DLP solution. Here are some things it wa
 
 ## Releases
 
+#### Version 0.2.1 - 2019-08-11
+- Fixed allowed keys bug introduced in v0.2.0
 #### Version 0.2.0 - 2019-08-05
 - Changed `tokenize` to `mask` because tokenize was a lie.. it's masking.
     - Replaced `--no-tokenize` switch with `--mask` switch.
