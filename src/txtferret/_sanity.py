@@ -1,5 +1,3 @@
-import re
-
 
 def luhn(account_string, _encoding):
     """Return bool if string passes Luhn test.

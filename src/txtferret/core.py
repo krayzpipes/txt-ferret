@@ -7,7 +7,7 @@ import re
 
 from loguru import logger
 
-from ._config import _allowed_settings_keys
+from ._config import ALLOWED_SETTINGS_KEYS
 from ._sanity import sanity_check
 from ._default import (
     DEFAULT_SUBSTITUTE,
@@ -80,7 +80,7 @@ def _byte_code_to_string(byte_code, _encoding):
 
     :return: UTF-8 version of byte-code.
     """
-    match = re.match(b"b(\d{1,3})", byte_code)
+    match = re.match(b"b([0-9]{1,3})", byte_code)
     if not match:
         return byte_code
     code_ = int(match.group(1))
@@ -258,7 +258,7 @@ class TxtFerret:
                     continue
                 self.mask = True
 
-            if setting not in _allowed_settings_keys:
+            if setting not in ALLOWED_SETTINGS_KEYS:
                 continue
 
             # ignore_columns will not be a switch, so we want to go

@@ -26,7 +26,7 @@ filters:
   - label: american_express_15_ccn
     type: Credit Card Number
     sanity: luhn
-    pattern: '((?:34|37)\d{2}(?:(?:[\W_]\d{6}[\W_]\d{5})|\d{11}))'
+    pattern: '((?:34|37)[0-9]{2}(?:(?:[\W_][0-9]{6}[\W_][0-9]{5})|[0-9]{11}))'
     substitute: '[\W_]'
     mask:
       value: XXXXXXXXXXXXX
@@ -34,7 +34,7 @@ filters:
   - label: visa_16_ccn
     type: Credit Card Number
     sanity: luhn
-    pattern: '(4\d{3}(?:(?:[\W_]\d{4}){3}|\d{12}))'
+    pattern: '(4[0-9]{3}(?:(?:[\W_][0-9]{4}){3}|[0-9]{12}))'
     substitute: '[\W_]'
     mask:
       value: XXXXXXXXXXXXXXX
@@ -42,7 +42,7 @@ filters:
   - label: master_card_16_ccn
     type: Credit Card Number
     sanity: luhn
-    pattern: '(5[1-5]\d{2}(?:(?:[\W_]\d{4}){3}|\d{12}))'
+    pattern: '(5[1-5][0-9]{2}(?:(?:[\W_][0-9]{4}){3}|[0-9]{12}))'
     substitute: '[\W_]'
     mask:
       value: XXXXXXXXXXXXXX
@@ -50,7 +50,7 @@ filters:
   - label: discover_16_ccn
     type: Credit Card Number
     sanity: luhn
-    pattern: '(6011(?:(?:[\W_]\d{4}){3}|\d{12}))'
+    pattern: '(6011(?:(?:[\W_][0-9]{4}){3}|[0-9]{12}))'
     substitute: '[\W_]'
     mask:
       value: XXXXXXXXXXXX
@@ -58,7 +58,7 @@ filters:
   - label: diners_carte_14_ccn
     type: Credit Card Number
     sanity: luhn
-    pattern: '((?:30[0-5]\d|3[68]\d{2})(?:(?:[\W_]\d{6}[\W_]\d{4})|\d{10}))'
+    pattern: '((?:30[0-5][0-9]|3[68][0-9]{2})(?:(?:[\W_][0-9]{6}[\W_][0-9]{4})|[0-9]{10}))'
     substitute: '[\W_]'
     mask:
       value: XXXXXXXXXXXX

@@ -1,4 +1,3 @@
-import os
 
 import yaml
 
@@ -6,10 +5,10 @@ from ._default import DEFAULT_YAML
 
 
 # Keys allowed in top lovel of config.
-_allowed_top_level = {"filters", "settings"}
+ALLOWED_TOP_LEVEL = {"filters", "settings"}
 
 # Keys allowed for a filter in the config YAML file.
-_allowed_filter_keys = {
+ALLOWED_FILTER_KEYS = {
     "label",
     "type",
     "pattern",
@@ -20,13 +19,13 @@ _allowed_filter_keys = {
 }
 
 # Keys allowed for the filter.tokenize values.
-_allowed_token_keys = {"mask", "index"}
+ALLOWED_MASK_KEYS = {"mask", "index"}
 
 # Keys required for a filter to pass validation.
-_required_filter_keys = {"label", "pattern"}
+REQUIRED_FILTER_KEYS = {"label", "pattern"}
 
 # Keys allowed for settings section in the config YAML file.
-_allowed_settings_keys = {
+ALLOWED_SETTINGS_KEYS = {
     "tokenize",
     "log_level",
     "summarize",
@@ -148,7 +147,7 @@ def validate_config(
     """
     # Make sure only allowed values at top level of config.
     top_level_keys = set(config_dict.keys())
-    allowed_top_level = top_level or _allowed_top_level
+    allowed_top_level = top_level or ALLOWED_TOP_LEVEL
 
     if not subset_check(subset=top_level_keys, set_=allowed_top_level):
         raise ValueError("Bad config: One or more top-lvel keys are not allowed.")
@@ -158,7 +157,7 @@ def validate_config(
         for filter_ in config_dict["filters"]:
 
             _filter_keys = set(filter_.keys())
-            allowed_filter_keys = filter_keys or _allowed_filter_keys
+            allowed_filter_keys = filter_keys or ALLOWED_FILTER_KEYS
 
             if not subset_check(subset=_filter_keys, set_=allowed_filter_keys):
                 raise ValueError("Bad config: One or more filter keys are not allowed.")
@@ -166,7 +165,7 @@ def validate_config(
             # Note, the set order is switched up here as we want to find
             # which keys in the subset (required) are NOT in the main
             # set (The actual keys).
-            required_filter_keys = required_keys or _required_filter_keys
+            required_filter_keys = required_keys or REQUIRED_FILTER_KEYS
 
             if not subset_check(subset=required_filter_keys, set_=_filter_keys):
                 raise ValueError(
@@ -176,9 +175,9 @@ def validate_config(
             if filter_.get("tokenize", None) is not None:
 
                 _token_keys = set(filter_["tokenize"].keys())
-                allowed_token_keys = token_keys or _allowed_token_keys
+                allowed_mask_keys = token_keys or ALLOWED_MASK_KEYS
 
-                if not subset_check(subset=_token_keys, set_=allowed_token_keys):
+                if not subset_check(subset=_token_keys, set_=allowed_mask_keys):
                     raise ValueError(
                         "Bad config: One or more filter token keys is not allowed."
                     )
@@ -187,7 +186,7 @@ def validate_config(
     if "settings" in config_dict:
 
         _settings_keys = set(config_dict["settings"].keys())
-        allowed_settings_keys = settings_keys or _allowed_settings_keys
+        allowed_settings_keys = settings_keys or ALLOWED_SETTINGS_KEYS
 
         if not subset_check(subset=_settings_keys, set_=allowed_settings_keys):
             raise ValueError("Bad config: One or more settings are not allowed.")
