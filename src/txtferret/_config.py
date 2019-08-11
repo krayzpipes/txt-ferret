@@ -12,21 +12,21 @@ ALLOWED_FILTER_KEYS = {
     "label",
     "type",
     "pattern",
-    "tokenize",
+    "mask",
     "sanity",
     "substitute",
     "encoding",
 }
 
 # Keys allowed for the filter.tokenize values.
-ALLOWED_MASK_KEYS = {"mask", "index"}
+ALLOWED_MASK_KEYS = {"value", "index"}
 
 # Keys required for a filter to pass validation.
 REQUIRED_FILTER_KEYS = {"label", "pattern"}
 
 # Keys allowed for settings section in the config YAML file.
 ALLOWED_SETTINGS_KEYS = {
-    "tokenize",
+    "mask",
     "log_level",
     "summarize",
     "output_file",
