@@ -59,7 +59,7 @@ Why use txtferret?  See the __How/why did this come about?__ section below.
     
     $ txtferret scan my_test_file.dat
     2019:05:20-22:18:01:-0400 Beginning scan for /home/mrferret/Documents/test_file_1.dat
-    2019:05:20-22:18:18:-0400 PASSED sanity and matched regex - /home/mrferret/Documents/test_file_1.dat - Filter: visa_16_ccn, Line 712567, String: 4XXXXXXXXXXXXXXX
+    2019:05:20-22:18:18:-0400 PASSED sanity and matched regex - /home/mrferret/Documents/test_file_1.dat - Filter: fake_ccn_account_filter, Line 712567, String: 100102030405060708094
     2019:05:20-22:19:09:-0400 Finished scan for /home/mrferret/Documents/test_file_1.dat
     2019:05:20-22:19:09:-0400 SUMMARY:
     2019:05:20-22:19:09:-0400   - Matched regex, failed sanity: 2
@@ -73,7 +73,7 @@ Why use txtferret?  See the __How/why did this come about?__ section below.
     
     $ txtferret scan --delimiter , test_file_1.csv
     2019:05:20-21:41:57:-0400 Beginning scan for /home/mrferret/Documents/test_file_1.csv
-    2019:05:20-21:44:34:-0400 PASSED sanity and matched regex - /home/mrferret/Documents/test_file_1.csv - Filter: visa_16_ccn, Line 712567, String: 4XXXXXXXXXXXXXXX, Column: 171
+    2019:05:20-21:44:34:-0400 PASSED sanity and matched regex - /home/mrferret/Documents/test_file_1.csv - Filter: fake_ccn_account_filter, Line 712567, String: 100102030405060708094, Column: 171
     2019:05:20-21:49:16:-0400 Finished scan for /home/mrferret/Documents/test_file_1.csv
     2019:05:20-21:49:16:-0400 SUMMARY:
     2019:05:20-21:49:16:-0400   - Matched regex, failed sanity: 2
@@ -90,10 +90,10 @@ Why use txtferret?  See the __How/why did this come about?__ section below.
     2019:06:09-15:15:27:-0400 Beginning scan for /home/mrferret/Documents/test_file_1.dat.gz
     2019:06:09-15:15:27:-0400 Beginning scan for /home/mrferret/Documents/test_file_2.dat.gz
     2019:06:09-15:15:27:-0400 Beginning scan for /home/mrferret/Documents/test_file_3.dat
-    2019:06:09-15:15:27:-0400 PASSED sanity and matched regex - /home/mrferret/Documents/test_file_2.dat.gz - Filter: visa_16_ccn, Line 4, String: 4XXXXXXXXXXXXXXX026
+    2019:06:09-15:15:27:-0400 PASSED sanity and matched regex - /home/mrferret/Documents/test_file_2.dat.gz - Filter: fake_ccn_account_filter, Line 4, String: 100102030405060708094
     2019:06:09-15:15:27:-0400 Finished scan for /home/mrferret/Documents/test_file_2.dat.gz
-    2019:06:09-15:16:04:-0400 PASSED sanity and matched regex - /home/mrferret/Documents/test_file_3.dat - Filter: visa_16_ccn, Line 712567, String: 4XXXXXXXXXXXXXXX
-    2019:06:09-15:16:51:-0400 PASSED sanity and matched regex - /home/mrferret/Documents/test_file_1.dat.gz - Filter: visa_16_ccn, Line 712567, String: 4XXXXXXXXXXXXXXX
+    2019:06:09-15:16:04:-0400 PASSED sanity and matched regex - /home/mrferret/Documents/test_file_3.dat - Filter: fake_ccn_account_filter, Line 712567, String: 100102030405060708094
+    2019:06:09-15:16:51:-0400 PASSED sanity and matched regex - /home/mrferret/Documents/test_file_1.dat.gz - Filter: fake_ccn_account_filter, Line 712567, String: 100102030405060708094
     2019:06:09-15:17:15:-0400 Finished scan for /home/mrferret/Documents/test_file_3.dat
     2019:06:09-15:19:24:-0400 Finished scan for /home/mrferret/Documents/test_file_1.dat.gz
     2019:06:09-15:19:24:-0400 SUMMARY:
@@ -143,15 +143,15 @@ filters:
   pattern: '((?:34|37)\d{2}(?:(?:[\W_]\d{6}[\W_]\d{5})|\d{11}))'
   substitute: '[\W_]'
   sanity: luhn
-  tokenize:
+  mask:
     index: 2,
-    mask: XXXXXXXX
+    value: XXXXXXXX
   type: Credit Card Number
 ```
 
-- **Label:**
+- **label:**
     - This will be displayed in the logs when the filter in question has matched a string.
-- **Pattern:**
+- **pattern:**
     - The regular expression which will be used to find data in the file.
     - Regular expression must be compatible with the python `re` module in the standard library.
     - Be sure that your regular expression only contains ONE and ONLY ONE capture group. For example,
@@ -163,30 +163,30 @@ filters:
         group as defined by starting the capture group with `?:`.
     - __Note: If you run into issues with loading a custom filter, try adding
     single-quotes around your regular expression.__
-- **Substitute:**
+- **substitute:**
     - Allows you to define what characters are removed from a string before it is passed to the sanity check(s).
     - Must be a valid regular expression.
     - If missing or empty, the default substitute is `[\W_]`.
-- **Sanity:**
+- **sanity:**
     - This is the algorithm to use with this filter in order to validate the data is really what you're
     looking for. For example, 16 digits might just be a random number and not a credit card. Putting the
     numbers through the `luhn` algorithm will validate they could potentially be an account number and
     reduce false positives.
     - You can also pass through a list of strings that represent algorithms as long as the algorithm exists
     in the library. If not, please add it and make a pull request!
-- **Tokenize:**
+- **mask:**
     - index:
-        - This is the position in the matched string in which the tokenization will begin.
-    - mask
-        - The string which will be used to tokenize the matched string.
-- **Type:**
+        - This is the position in the matched string in which the masking will begin.
+    - value
+        - The string which will be used to mask the matched string.
+- **type:**
     - This is basically a description of the 'type' of data you're looking for with this filter.
 
 ### Settings
 
 ```yaml
 settings:
-  tokenize: Yes
+  mask: No
   log_level: INFO
   summarize: No
   output_file:
@@ -202,16 +202,16 @@ settings:
     ```bash
     $ txtferret scan --bulk /home/mrferret/Documents
     ```
-- **tokenize**
-    - If set to true, the token mask defined in the filter will be used to mask the data during output.
-    - If no mask is set for a filter, the program will tokenize with a default mask.
+- **mask**
+    - If set to true, the mask value defined in the filter will be used to mask the data during output.
+    - If no mask is set for a filter, the program will mask with a default mask value.
     - This is set to 'true' by default.
-    - **CLI** - The `-nt` switch can be used to turn off tokenization'
+    - **CLI** - The `-m` switch can be used to turn on masking'
     ```bash
-    $ txtferret scan ../fake_ccn_data.txt
+    $ txtferret scan -m ../fake_ccn_data.txt
     2017:05:20-00:24:52:-0400 PASSED sanity and matched regex - Filter: fake_ccn_account_filter, Line 1, String: 10XXXXXXXXXXXXXXXXXXX
   
-    $ txtferret scan -nt ../fake_ccn_data.txt
+    $ txtferret scan ../fake_ccn_data.txt
     2017:05:20-00:26:18:-0400 PASSED sanity and matched regex - Filter: fake_ccn_account_filter, Line 1, String: 100102030405060708094
     ```
 - **log_level:**
@@ -221,10 +221,10 @@ settings:
     - **CLI** - The `-l` switch will allow you to change log levels:
     ```bash
     $ txtferret scan ../fake_ccn_data.txt
-    2019:05:20-00:36:00:-0400 PASSED sanity and matched regex - Filter: fake_ccn_account_filter, Line 1, String: 10XXXXXXXXXXXXXXXXXXX
+    2019:05:20-00:36:00:-0400 PASSED sanity and matched regex - Filter: fake_ccn_account_filter, Line 1, String: 100102030405060708094
   
     $ txtferret scan -l DEBUG ../fake_ccn_data.txt
-    2019:05:20-01:02:07:-0400 PASSED sanity and matched regex - Filter: fake_ccn_account_filter, Line 1, String: 10XXXXXXXXXXXXXXXXXXX
+    2019:05:20-01:02:07:-0400 PASSED sanity and matched regex - Filter: fake_ccn_account_filter, Line 1, String: 100102030405060708094
     2019:05:20-01:02:07:-0400 FAILED sanity and matched regex - Filter: fake_ccn_account_filter, Line: 2
     ```
 - **summarize**
@@ -235,7 +235,7 @@ settings:
     - **CLI** - The `-s` switch will kickoff the summary.
     ```bash
     $ txtferret scan ../fake_ccn_data.txt
-    2019:05:20-00:36:00:-0400 PASSED sanity and matched regex - Filter: fake_ccn_account_filter, Line 1, String: 10XXXXXXXXXXXXXXXXXXX
+    2019:05:20-00:36:00:-0400 PASSED sanity and matched regex - Filter: fake_ccn_account_filter, Line 1, String: 100102030405060708094
  
     $ txtferret scan -s ../fake_ccn_data.txt
     2019:05:20-01:05:29:-0400 SUMMARY:
@@ -264,12 +264,12 @@ settings:
     - **CLI** - Use the `-d` switch to set a delimiter and scan per column instead of line.
     ```bash
     $ txtferret scan ../fake_ccn_data.txt
-    2019:05:20-00:36:00:-0400 PASSED sanity and matched regex - Filter: fake_ccn_account_filter, Line 1, String: 10XXXXXXXXXXXXXXXXXXX
+    2019:05:20-00:36:00:-0400 PASSED sanity and matched regex - Filter: fake_ccn_account_filter, Line 1, String: 100102030405060708094
     
     # Comma delimiter
 
     $ txtferret scan -d , ../fake_ccn_CSV_file.csv
-    2019:05:20-01:12:18:-0400 PASSED sanity and matched regex - Filter: fake_ccn_account_filter, Line 1, String: 10XXXXXXXXXXXXXXXXXXX, Column: 3
+    2019:05:20-01:12:18:-0400 PASSED sanity and matched regex - Filter: fake_ccn_account_filter, Line 1, String: 100102030405060708094, Column: 3
     ```
  - **ignore_columns**
     - This setting is ignored if the `delimiter` setting or switch is not set.
@@ -311,14 +311,18 @@ sanity check which can be paired with a DLP solution. Here are some things it wa
     - Indicates which line the string was found.
     - Indicates which column if you've defined a delimiter (ex: comma for CSV files).
     - You can choose to mask your output data to make sure you're not putting sensitive data
-    into your log files or outputting them to your terminal.
-    - You can also turn off masking/tokenization so that you can see exactly what was matched. 
+    into your log files or outputting them to your terminal. 
 - __It's free__
     - No contracts
     - No outrageous licensing per GB of data scanned.
 - __You can contribute!__
 
 ## Releases
+
+#### Version 0.2.0 - 2019-08-05
+- Changed `tokenize` to `mask` because tokenize was a lie.. it's masking.
+    - Replaced `--no-tokenize` switch with `--mask` switch.
+- Turned masking off by default.
 
 #### Version 0.1.3 - 2019-08-05
 - Added `file_encoding` setting for multi-encoding support.
