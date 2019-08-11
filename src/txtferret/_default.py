@@ -13,7 +13,7 @@ DEFAULT_MASK_INDEX = 0
 
 DEFAULT_YAML = """
 settings:
-  value: No
+  mask: No
   log_level: INFO
   summarize: No
   output_file:
