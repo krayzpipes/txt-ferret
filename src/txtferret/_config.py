@@ -15,6 +15,7 @@ ALLOWED_FILTER_KEYS = {
     "sanity",
     "substitute",
     "encoding",
+    "exclude_patterns",
 }
 
 # Keys allowed for the filter.tokenize values.

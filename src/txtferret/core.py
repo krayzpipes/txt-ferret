@@ -176,6 +176,14 @@ class Filter:
                 f"Filter did not have mask section. Reverting to "
                 f"default masking value and index."
             )
+        try:
+            _exclude_patterns = filter_dict["excluded_patterns"]
+        except KeyError:
+            raise ValueError("Excluded patterns not found in config file.")
+        else:
+            self.exclude_patterns = [
+                re.compile(pattern) for pattern in _exclude_patterns
+            ]
 
         self.mask_value = self.mask_value.encode(_encoding)
         self.pattern = self.pattern.encode(_encoding)
@@ -423,6 +431,14 @@ class TxtFerret:
             for column_number, column_match_list in column_map.items():
                 for column_match in column_match_list:
 
+                    exclusion_found = False
+                    for exclusion in filter_.exclude_patterns:
+                        if exclusion.search(column_match):
+                            exclusion_found = True
+
+                    if exclusion_found:
+                        continue
+
                     if not sanity_test(
                         filter_, column_match, encoding=self.file_encoding
                     ):
@@ -466,6 +482,12 @@ class TxtFerret:
                 continue
 
             for match in matches:
+
+                for exclusion_pattern in filter_.exclude_patterns:
+                    if exclusion_pattern.search(match):
+                        # TODO Add metric for failing exclusions?
+                        continue
+
                 if not sanity_test(filter_, match):
                     self.failed_sanity += 1
                     continue
@@ -513,13 +535,20 @@ def get_column_map(columns=None, filter_=None, ignore_columns=None):
         if (i + 1) in ignore_columns:
             continue
 
-        matches = filter_.regex.findall(column)
+        _matches = filter_.regex.findall(column)
 
-        if not matches:
+        if not _matches:
             continue
 
+        # Filter out strings that match exclusions.
+        final_matches = []
+        for match in _matches:
+            for exclude_pattern in filter_.exclude_patterns:
+                if not exclude_pattern.search(match):
+                    final_matches.append(match)
+
         # Fill out the column_map with {"index": "match"}
-        for match in matches:
+        for match in final_matches:
             j = str(i)
             # In case there are multiple matches in a column.
             if j not in column_map:
