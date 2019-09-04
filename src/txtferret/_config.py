@@ -1,4 +1,3 @@
-
 import yaml
 
 from ._default import DEFAULT_YAML

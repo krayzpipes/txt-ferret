@@ -15,7 +15,11 @@ from ._default import (
     DEFAULT_ENCODING,
     DEFAULT_MASK_INDEX,
     DEFAULT_MASK_VALUE,
+    LOG_HEADERS,
 )
+
+
+CURRENT_DIR = dir
 
 
 def mask(
@@ -192,10 +196,20 @@ def results_file_name(file_path, output_dir):
     return f"{output_path}.results"
 
 
-def get_file_path(file_path, output_file, opener=None):
-    _open = opener or open
+def get_file_path(file_path, output_file):
     _output_dir = os.path.dirname(output_file)
     return results_file_name(file_path, _output_dir)
+
+
+class FakeWriter:
+    def __init__(self):
+        pass
+
+    def write(self):
+        pass
+
+    def close(self):
+        pass
 
 
 class TxtFerret:
@@ -257,8 +271,11 @@ class TxtFerret:
             Filter(filter_dict=filter_, gzip=self.gzip) for filter_ in config["filters"]
         ]
 
-        file_path= get_file_path(self.file_name, self.output_file)
-        self.fh = open(file_path, "w+", encoding=self.file_encoding)
+        if self.output_file:
+            file_path = get_file_path(self.file_name, self.output_file)
+            self.fh = open(file_path, "w+", encoding=self.file_encoding)
+        else:
+            self.fh = None
 
     def set_attributes(self, **kwargs):
         """Sets attributes for the TxtFerret object.
@@ -290,7 +307,8 @@ class TxtFerret:
                     )
                     log_message = f"Columns set to be ignored: {print_string}"
                     logger.info(log_message)
-                    self.fh.write(f"{log_message}\n")
+                    if self.fh is not None:
+                        self.fh.write(f"{log_message}\n")
 
                     continue
                 # If it is None or empty, make it an empty set
@@ -340,20 +358,15 @@ class TxtFerret:
 
         file_to_scan = file_name or self.file_name
 
-        log_message = f"Begining scan for {file_to_scan}"
+        log_message = f"Beginning scan for {file_to_scan}"
         logger.info(log_message)
-        self.fh.write(f"{log_message}\n")
+        if self.fh is not None:
+            self.fh.write(f"{log_message}\n")
 
-        log_headers = '\t'.join([
-            "date_time",
-            "file_path",
-            "filter_label",
-            "line_num",
-            "column_num",
-            "string_matched",
-        ])
+        log_headers = LOG_HEADERS
 
-        self.fh.write(f"{log_headers}\n")
+        if self.fh is not None:
+            self.fh.write(f"{log_headers}\n")
 
         if not self.gzip:
             _open = open
@@ -380,11 +393,14 @@ class TxtFerret:
         delta_seconds = str(self._time_delta.seconds)
         delta_minutes = str(self._time_delta.seconds // 60)
 
-        finished_message = f"Finished scan for {self.file_name} in {delta_seconds} seconds (~{delta_minutes} minutes)."
+        finished_message = (
+            f"Finished scan for {self.file_name} in {delta_seconds} seconds "
+            f"(~{delta_minutes} minutes)."
+        )
         logger.info(finished_message)
-        self.fh.write(f"{finished_message}\n")
-
-        self.fh.close()
+        if self.fh is not None:
+            self.fh.write(f"{finished_message}\n")
+            self.fh.close()
 
     def _scan_delimited_line(self, line, index):
         """Scan a delimited line.
@@ -553,12 +569,17 @@ def log_success(file_name, filter_, index, string_, file_handler, column=None):
     matched_string = string_
     date_time = datetime.now()
     _column = str(column + 1) or "N/A"
-    message = "\t".join([
-        date_time.ctime(),
-        file_name,
-        filter_.label,
-        str(index + 1),
-        _column,
-        matched_string,
-    ])
+    message = "\t".join(
+        [
+            date_time.ctime(),
+            file_name,
+            filter_.label,
+            str(index + 1),
+            _column,
+            matched_string,
+        ]
+    )
+    if file_handler is None:
+        logger.info(message)
+        return
     file_handler.write(f"{message}\n")

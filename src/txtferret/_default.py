@@ -10,6 +10,17 @@ DEFAULT_ENCODING = "utf-8"
 DEFAULT_MASK_VALUE = "XXXXXXXXXXXXXXX"
 DEFAULT_MASK_INDEX = 0
 
+LOG_HEADERS = "\t".join(
+    [
+        "date_time",
+        "file_path",
+        "filter_label",
+        "line_num",
+        "column_num",
+        "string_matched",
+    ]
+)
+
 
 DEFAULT_YAML = """
 settings:

@@ -11,6 +11,7 @@ from loguru import logger
 
 from ._config import load_config, save_config
 from .core import TxtFerret
+from ._default import LOG_HEADERS
 
 
 def set_logger(**cli_kwargs):
@@ -157,6 +158,11 @@ def scan(**cli_kwargs):
     config = prep_config(**cli_kwargs)
 
     set_logger(**cli_kwargs)
+
+    if not cli_kwargs["output_file"]:
+        # Results will be printed to screen so log headers will
+        # help user know what they're looking at.
+        logger.info(f"Log headers: {LOG_HEADERS}")
 
     if not cli_kwargs["bulk"]:
 
