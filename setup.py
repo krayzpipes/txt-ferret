@@ -14,8 +14,8 @@ from setuptools import setup, find_packages
 from codecs import open
 from os import path
 
-__version__ = "0.2.1"
-description = "Scan text files for sensitive (or non-sensitive) data."
+__version__ = "0.3.0"
+description = "Scan text files for senitive (or non-sensitive) data."
 
 here = path.abspath(path.dirname(__file__))
 

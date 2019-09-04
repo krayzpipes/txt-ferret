@@ -1,4 +1,3 @@
-
 import yaml
 
 from ._default import DEFAULT_YAML
@@ -16,6 +15,7 @@ ALLOWED_FILTER_KEYS = {
     "sanity",
     "substitute",
     "encoding",
+    "exclude_patterns",
 }
 
 # Keys allowed for the filter.tokenize values.

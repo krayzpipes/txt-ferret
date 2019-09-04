@@ -10,6 +10,17 @@ DEFAULT_ENCODING = "utf-8"
 DEFAULT_MASK_VALUE = "XXXXXXXXXXXXXXX"
 DEFAULT_MASK_INDEX = 0
 
+LOG_HEADERS = "\t".join(
+    [
+        "date_time",
+        "file_path",
+        "filter_label",
+        "line_num",
+        "column_num",
+        "string_matched",
+    ]
+)
+
 
 DEFAULT_YAML = """
 settings:
@@ -28,6 +39,7 @@ filters:
     sanity: luhn
     pattern: '((?:34|37)[0-9]{2}(?:(?:[\W_][0-9]{6}[\W_][0-9]{5})|[0-9]{11}))'
     substitute: '[\W_]'
+    exclude_patterns: []
     mask:
       value: XXXXXXXXXXXXX
       index: 2
@@ -36,6 +48,7 @@ filters:
     sanity: luhn
     pattern: '(4[0-9]{3}(?:(?:[\W_][0-9]{4}){3}|[0-9]{12}))'
     substitute: '[\W_]'
+    exclude_patterns: []
     mask:
       value: XXXXXXXXXXXXXXX
       index: 1
@@ -44,6 +57,7 @@ filters:
     sanity: luhn
     pattern: '(5[1-5][0-9]{2}(?:(?:[\W_][0-9]{4}){3}|[0-9]{12}))'
     substitute: '[\W_]'
+    exclude_patterns: []
     mask:
       value: XXXXXXXXXXXXXX
       index: 2
@@ -52,15 +66,8 @@ filters:
     sanity: luhn
     pattern: '(6011(?:(?:[\W_][0-9]{4}){3}|[0-9]{12}))'
     substitute: '[\W_]'
+    exclude_patterns: []
     mask:
       value: XXXXXXXXXXXX
       index: 4
-  - label: diners_carte_14_ccn
-    type: Credit Card Number
-    sanity: luhn
-    pattern: '((?:30[0-5][0-9]|3[68][0-9]{2})(?:(?:[\W_][0-9]{6}[\W_][0-9]{4})|[0-9]{10}))'
-    substitute: '[\W_]'
-    mask:
-      value: XXXXXXXXXXXX
-      index: 2
 """

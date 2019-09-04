@@ -2,6 +2,7 @@
 
 from datetime import datetime
 import gzip
+import os
 from pathlib import Path
 import re
 
@@ -14,7 +15,11 @@ from ._default import (
     DEFAULT_ENCODING,
     DEFAULT_MASK_INDEX,
     DEFAULT_MASK_VALUE,
+    LOG_HEADERS,
 )
+
+
+CURRENT_DIR = dir
 
 
 def mask(
@@ -171,6 +176,14 @@ class Filter:
                 f"Filter did not have mask section. Reverting to "
                 f"default masking value and index."
             )
+        try:
+            _exclude_patterns = filter_dict["excluded_patterns"]
+        except KeyError:
+            raise ValueError("Excluded patterns not found in config file.")
+        else:
+            self.exclude_patterns = [
+                re.compile(pattern) for pattern in _exclude_patterns
+            ]
 
         self.mask_value = self.mask_value.encode(_encoding)
         self.pattern = self.pattern.encode(_encoding)
@@ -185,6 +198,28 @@ class Filter:
         self.regex = re.compile(self.pattern)
 
 
+def results_file_name(file_path, output_dir):
+    file_name = os.path.basename(file_path)
+    output_path = os.path.join(output_dir, file_name)
+    return f"{output_path}.results"
+
+
+def get_file_path(file_path, output_file):
+    _output_dir = os.path.dirname(output_file)
+    return results_file_name(file_path, _output_dir)
+
+
+class FakeWriter:
+    def __init__(self):
+        pass
+
+    def write(self):
+        pass
+
+    def close(self):
+        pass
+
+
 class TxtFerret:
     """Class to hold state and manage scanning files for data.
 
@@ -195,7 +230,6 @@ class TxtFerret:
     :attribute gzip: Bool depicting if input file is gzipped
     :attribute mask: Determines if txt_ferret will mask the
         output of strings that match and pass sanity checks.
-    :attribute log_level: Log level to be used by loguru.logger.
     :attribute summarize: If True, only outputs summary of the scan
         results.
     :attribute output_file: File to write results to.
@@ -245,6 +279,12 @@ class TxtFerret:
             Filter(filter_dict=filter_, gzip=self.gzip) for filter_ in config["filters"]
         ]
 
+        if self.output_file:
+            file_path = get_file_path(self.file_name, self.output_file)
+            self.fh = open(file_path, "w+", encoding=self.file_encoding)
+        else:
+            self.fh = None
+
     def set_attributes(self, **kwargs):
         """Sets attributes for the TxtFerret object.
 
@@ -273,7 +313,10 @@ class TxtFerret:
                     print_string = ", ".join(
                         [str(col_num) for col_num in sorted(self.ignore_columns)]
                     )
-                    logger.info(f"Columns set to be ignored: {print_string}")
+                    log_message = f"Columns set to be ignored: {print_string}"
+                    logger.info(log_message)
+                    if self.fh is not None:
+                        self.fh.write(f"{log_message}\n")
 
                     continue
                 # If it is None or empty, make it an empty set
@@ -323,7 +366,15 @@ class TxtFerret:
 
         file_to_scan = file_name or self.file_name
 
-        logger.info(f"Beginning scan for {file_to_scan}")
+        log_message = f"Beginning scan for {file_to_scan}"
+        logger.info(log_message)
+        if self.fh is not None:
+            self.fh.write(f"{log_message}\n")
+
+        log_headers = LOG_HEADERS
+
+        if self.fh is not None:
+            self.fh.write(f"{log_headers}\n")
 
         if not self.gzip:
             _open = open
@@ -347,7 +398,17 @@ class TxtFerret:
         end = datetime.now()
         self._time_delta = end - start
 
-        logger.info(f"Finished scan for {self.file_name}")
+        delta_seconds = str(self._time_delta.seconds)
+        delta_minutes = str(self._time_delta.seconds // 60)
+
+        finished_message = (
+            f"Finished scan for {self.file_name} in {delta_seconds} seconds "
+            f"(~{delta_minutes} minutes)."
+        )
+        logger.info(finished_message)
+        if self.fh is not None:
+            self.fh.write(f"{finished_message}\n")
+            self.fh.close()
 
     def _scan_delimited_line(self, line, index):
         """Scan a delimited line.
@@ -370,13 +431,18 @@ class TxtFerret:
             for column_number, column_match_list in column_map.items():
                 for column_match in column_match_list:
 
+                    exclusion_found = False
+                    for exclusion in filter_.exclude_patterns:
+                        if exclusion.search(column_match):
+                            exclusion_found = True
+
+                    if exclusion_found:
+                        continue
+
                     if not sanity_test(
                         filter_, column_match, encoding=self.file_encoding
                     ):
                         self.failed_sanity += 1
-
-                        if not self.summarize:
-                            log_failure(self.file_name, filter_, index)
 
                         continue
 
@@ -399,6 +465,7 @@ class TxtFerret:
                             filter_,
                             index,
                             string_to_log,
+                            self.fh,
                             column=int(column_number),
                         )
 
@@ -415,10 +482,14 @@ class TxtFerret:
                 continue
 
             for match in matches:
+
+                for exclusion_pattern in filter_.exclude_patterns:
+                    if exclusion_pattern.search(match):
+                        # TODO Add metric for failing exclusions?
+                        continue
+
                 if not sanity_test(filter_, match):
                     self.failed_sanity += 1
-                    if not self.summarize:
-                        log_failure(self.file_name, filter_, index)
                     continue
 
                 self.passed_sanity += 1
@@ -436,7 +507,13 @@ class TxtFerret:
                 string_to_log = _string_to_log.decode(self.file_encoding)
 
                 if not self.summarize:
-                    log_success(self.file_name, filter_, index, string_to_log)
+                    log_success(
+                        self.file_name,
+                        filter_,
+                        index,
+                        string_to_log,
+                        file_handler=self.fh,
+                    )
 
 
 # TODO get_column_map needs tests.
@@ -458,13 +535,20 @@ def get_column_map(columns=None, filter_=None, ignore_columns=None):
         if (i + 1) in ignore_columns:
             continue
 
-        matches = filter_.regex.findall(column)
+        _matches = filter_.regex.findall(column)
 
-        if not matches:
+        if not _matches:
             continue
 
+        # Filter out strings that match exclusions.
+        final_matches = []
+        for match in _matches:
+            for exclude_pattern in filter_.exclude_patterns:
+                if not exclude_pattern.search(match):
+                    final_matches.append(match)
+
         # Fill out the column_map with {"index": "match"}
-        for match in matches:
+        for match in final_matches:
             j = str(i)
             # In case there are multiple matches in a column.
             if j not in column_map:
@@ -502,43 +586,29 @@ def sanity_test(filter_, text, sub=True, encoding=DEFAULT_ENCODING, sanity_func=
     return True
 
 
-def log_success(file_name, filter_, index, string_, column=None):
+def log_success(file_name, filter_, index, string_, file_handler, column=None):
     """Log success messages.
 
     :param filter_: The Filter object.
     :param index: The line number.
     :param string_: The string that matched the filter.
+    "param file_handler: File handler to write logs to.
     :param column: Column which the filter matched some text.
     """
     matched_string = string_
-    if column is not None:
-        message = (
-            f"PASSED sanity and matched regex - {file_name} - Filter: {filter_.label}, "
-            f"Line {index + 1}, String: {matched_string}, Column: {column + 1}"
-        )
-    else:
-        message = (
-            f"PASSED sanity and matched regex - {file_name} - Filter: {filter_.label}, "
-            f"Line {index + 1}, String: {matched_string}"
-        )
-    logger.info(message)
-
-
-def log_failure(file_name, filter_, index, column=None):
-    """Log success messages.
-
-    :param filter_: The Filter object.
-    :param index: The line number.
-    :param column: Column which the filter matched some text.
-    """
-    if column:
-        message = (
-            f"FAILED sanity and matched regex - {file_name} - Filter: {filter_.label}, "
-            f"Line: {index + 1}, Column: {column + 1}"
-        )
-    else:
-        message = (
-            f"FAILED sanity and matched regex - {file_name} - Filter: {filter_.label}, "
-            f"Line: {index + 1}"
-        )
-    logger.debug(message)
+    date_time = datetime.now()
+    _column = str(column + 1) or "N/A"
+    message = "\t".join(
+        [
+            date_time.ctime(),
+            file_name,
+            filter_.label,
+            str(index + 1),
+            _column,
+            matched_string,
+        ]
+    )
+    if file_handler is None:
+        logger.info(message)
+        return
+    file_handler.write(f"{message}\n")

@@ -142,6 +142,7 @@ filters:
 - label: american_express_15_ccn
   pattern: '((?:34|37)\d{2}(?:(?:[\W_]\d{6}[\W_]\d{5})|\d{11}))'
   substitute: '[\W_]'
+  exclude_patterns: ["dont_match_me", "dont_match_me_either"]
   sanity: luhn
   mask:
     index: 2,
@@ -163,6 +164,9 @@ filters:
         group as defined by starting the capture group with `?:`.
     - __Note: If you run into issues with loading a custom filter, try adding
     single-quotes around your regular expression.__
+- **exclude_patterns:**
+    - List of regular expressions.
+    - If a pattern match also matches any of the `exclude_patterns`, it will not be included in the results.'
 - **substitute:**
     - Allows you to define what characters are removed from a string before it is passed to the sanity check(s).
     - Must be a valid regular expression.
@@ -214,19 +218,6 @@ settings:
     $ txtferret scan ../fake_ccn_data.txt
     2017:05:20-00:26:18:-0400 PASSED sanity and matched regex - Filter: fake_ccn_account_filter, Line 1, String: 100102030405060708094
     ```
-- **log_level:**
-    - This is the log level which you wish to use. `INFO` will only provide output for filters that
-    have matched AND passed the associated sanity check(s). `DEBUG` will log both matched/checked filters
-    as well as filters that matched but did NOT pass the sanity check(s).
-    - **CLI** - The `-l` switch will allow you to change log levels:
-    ```bash
-    $ txtferret scan ../fake_ccn_data.txt
-    2019:05:20-00:36:00:-0400 PASSED sanity and matched regex - Filter: fake_ccn_account_filter, Line 1, String: 100102030405060708094
-  
-    $ txtferret scan -l DEBUG ../fake_ccn_data.txt
-    2019:05:20-01:02:07:-0400 PASSED sanity and matched regex - Filter: fake_ccn_account_filter, Line 1, String: 100102030405060708094
-    2019:05:20-01:02:07:-0400 FAILED sanity and matched regex - Filter: fake_ccn_account_filter, Line: 2
-    ```
 - **summarize**
     - If set to true, the script will only output a list of three data points:
         - The number of matches that did not pass sanity checks.
@@ -245,7 +236,8 @@ settings:
     
     ```
 - **output_file**
-    - Add the absolute path to a file in which you would like to write results to.
+    - Add the absolute path to a file for script output.
+    - **Note** - File results are put into individual log files per file scanned.
     - **CLI** - Use the `-o` switch to set an output file.
     ```bash
     $ txtferret scan -o my_output.log file_to_scan.txt
@@ -318,6 +310,12 @@ sanity check which can be paired with a DLP solution. Here are some things it wa
 - __You can contribute!__
 
 ## Releases
+
+#### Version 0.3.0 - 2019-09-04
+- Removed log level switch. Only matches are shown now.
+- Added `exclude_patterns` to filters
+- Adjusted result format to tab-delimited output.
+- Bulk scans now write results to separate files instead of all in one file.
 
 #### Version 0.2.1 - 2019-08-11
 - Fixed allowed keys bug introduced in v0.2.0

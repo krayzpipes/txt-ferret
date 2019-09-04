@@ -11,6 +11,7 @@ from loguru import logger
 
 from ._config import load_config, save_config
 from .core import TxtFerret
+from ._default import LOG_HEADERS
 
 
 def set_logger(**cli_kwargs):
@@ -30,7 +31,7 @@ def set_logger(**cli_kwargs):
             {
                 "sink": sys.stdout,
                 "format": "<lvl>{time:YYYY:MM:DD-HH:mm:ss:ZZ} {message}</lvl>",
-                "level": cli_kwargs["log_level"],
+                "level": "INFO",
                 "enqueue": True,
             }
         ]
@@ -45,7 +46,7 @@ def set_logger(**cli_kwargs):
             "sink": output_file,
             "serialize": False,
             "format": "{time:YYYY:MM:DD-HH:mm:ss:ZZ} {message}",
-            "level": cli_kwargs["log_level"],
+            "level": "INFO",
             "enqueue": True,
         }
         log_config["handlers"].append(output_sink)
@@ -133,12 +134,6 @@ def cli():
     is_flag=True,
     help="When set, the data found while scanning will be masked when output.",
 )
-@click.option(
-    "--log-level",
-    "-l",
-    default="INFO",
-    help="Log level (cautious of file size for debug): INFO, WARNING, ERROR, DEBUG",
-)
 @click.option("--summarize", "-s", is_flag=True, help="Summarize output")
 @click.option(
     "--output-file",
@@ -163,6 +158,11 @@ def scan(**cli_kwargs):
     config = prep_config(**cli_kwargs)
 
     set_logger(**cli_kwargs)
+
+    if not cli_kwargs["output_file"]:
+        # Results will be printed to screen so log headers will
+        # help user know what they're looking at.
+        logger.info(f"Log headers: {LOG_HEADERS}")
 
     if not cli_kwargs["bulk"]:
 
