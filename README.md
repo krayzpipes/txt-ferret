@@ -311,7 +311,7 @@ sanity check which can be paired with a DLP solution. Here are some things it wa
 
 ## Releases
 
-#### Version 0.3.0 - 2019-09-05
+#### Version 0.3.0a - 2019-09-05
 - Removed log level switch. Only matches are shown now.
 - Added `exclude_patterns` to filters
 - Adjusted result format to tab-delimited output.
