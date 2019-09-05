@@ -177,7 +177,7 @@ class Filter:
                 f"default masking value and index."
             )
         try:
-            _exclude_patterns = filter_dict["excluded_patterns"]
+            _exclude_patterns = filter_dict["exclude_patterns"]
         except KeyError:
             raise ValueError("Excluded patterns not found in config file.")
         else:
