@@ -182,7 +182,7 @@ class Filter:
             raise ValueError("Excluded patterns not found in config file.")
         else:
             self.exclude_patterns = [
-                re.compile(pattern) for pattern in _exclude_patterns
+                re.compile(pattern.encode(_encoding)) for pattern in _exclude_patterns
             ]
 
         self.mask_value = self.mask_value.encode(_encoding)
@@ -207,17 +207,6 @@ def results_file_name(file_path, output_dir):
 def get_file_path(file_path, output_file):
     _output_dir = os.path.dirname(output_file)
     return results_file_name(file_path, _output_dir)
-
-
-class FakeWriter:
-    def __init__(self):
-        pass
-
-    def write(self):
-        pass
-
-    def close(self):
-        pass
 
 
 class TxtFerret:
@@ -431,14 +420,6 @@ class TxtFerret:
             for column_number, column_match_list in column_map.items():
                 for column_match in column_match_list:
 
-                    exclusion_found = False
-                    for exclusion in filter_.exclude_patterns:
-                        if exclusion.search(column_match):
-                            exclusion_found = True
-
-                    if exclusion_found:
-                        continue
-
                     if not sanity_test(
                         filter_, column_match, encoding=self.file_encoding
                     ):
@@ -482,6 +463,14 @@ class TxtFerret:
                 continue
 
             for match in matches:
+
+                exclusion_found = False
+                for exclusion in filter_.exclude_patterns:
+                    if exclusion.search(match):
+                        exclusion_found = True
+
+                if exclusion_found:
+                    continue
 
                 for exclusion_pattern in filter_.exclude_patterns:
                     if exclusion_pattern.search(match):
@@ -543,9 +532,12 @@ def get_column_map(columns=None, filter_=None, ignore_columns=None):
         # Filter out strings that match exclusions.
         final_matches = []
         for match in _matches:
+            include = True
             for exclude_pattern in filter_.exclude_patterns:
-                if not exclude_pattern.search(match):
-                    final_matches.append(match)
+                if exclude_pattern.search(match):
+                    include = False
+            if include:
+                final_matches.append(match)
 
         # Fill out the column_map with {"index": "match"}
         for match in final_matches:
@@ -597,7 +589,9 @@ def log_success(file_name, filter_, index, string_, file_handler, column=None):
     """
     matched_string = string_
     date_time = datetime.now()
-    _column = str(column + 1) or "N/A"
+    _column = "N/A"
+    if column is not None:
+        _column = str(column + 1)
     message = "\t".join(
         [
             date_time.ctime(),
