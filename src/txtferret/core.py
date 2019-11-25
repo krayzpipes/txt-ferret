@@ -238,6 +238,8 @@ class TxtFerret:
         cli_settings = config["cli_kwargs"]
 
         self.file_name = cli_settings["file_name"]
+        self.output_file = cli_settings.get("output_file")
+        self.file_encoding = cli_settings.get("file_encoding", DEFAULT_ENCODING)
         self.gzip = gzipped_file_check(self.file_name)
 
         if self.gzip:
@@ -246,14 +248,19 @@ class TxtFerret:
                 f"attempting GZIP mode (slower)."
             )
 
+        if self.output_file:
+            file_path = get_file_path(self.file_name, self.output_file)
+            self.fh = open(file_path, "w+", encoding=self.file_encoding)
+        else:
+            self.fh = None
+
+        # TODO - we should explicitly set these settings to avoid
+        # TODO - dependency issues/ordering...
         # Set settings from file.
         self.set_attributes(**config["settings"])
 
         # Override settings from file with CLI arguments if present.
         self.set_attributes(**cli_settings)
-
-        if getattr(self, "file_encoding", None) is None:
-            self.file_encoding = DEFAULT_ENCODING
 
         if self.delimiter:
             self.delimiter = self.delimiter.encode(self.file_encoding)
@@ -267,12 +274,6 @@ class TxtFerret:
         self.filters = [
             Filter(filter_dict=filter_, gzip=self.gzip) for filter_ in config["filters"]
         ]
-
-        if self.output_file:
-            file_path = get_file_path(self.file_name, self.output_file)
-            self.fh = open(file_path, "w+", encoding=self.file_encoding)
-        else:
-            self.fh = None
 
     def set_attributes(self, **kwargs):
         """Sets attributes for the TxtFerret object.
