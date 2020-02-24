@@ -6,7 +6,7 @@ attrs==19.1.0
 bandit==1.6.2
 better-exceptions-fork==0.2.1.post6
 black==19.3b0
-bleach==3.1.0
+bleach==3.1.1
 boto3==1.9.162
 botocore==1.12.162
 certifi==2019.3.9
